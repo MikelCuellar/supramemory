@@ -90,18 +90,18 @@ const Graph = (() => {
     const n = nodesData.length;
     const cols = Math.ceil(Math.sqrt(n));
     const rows = Math.ceil(n / cols);
-    const cellW = Math.min((width * 0.7) / cols, 140);
-    const cellH = Math.min((height * 0.7) / rows, 100);
+    // Usar 60% del width/height disponible para la grilla
+    const cellW = Math.min((width * 0.6) / cols, 110);
+    const cellH = Math.min((height * 0.6) / rows, 85);
     const gridW = cols * cellW;
     const gridH = rows * cellH;
     const startX = (width - gridW) / 2 + cellW / 2;
     const startY = (height - gridH) / 2 + cellH / 2;
-    console.log('Grid layout:', { n, cols, rows, cellW, cellH, startX, startY, width, height });
     nodesData.forEach((nd, i) => {
       const c = i % cols;
       const r = Math.floor(i / cols);
-      nd.x = startX + c * cellW + (Math.random() - 0.5) * cellW * 0.3;
-      nd.y = startY + r * cellH + (Math.random() - 0.5) * cellH * 0.3;
+      nd.x = startX + c * cellW + (Math.random() - 0.5) * cellW * 0.4;
+      nd.y = startY + r * cellH + (Math.random() - 0.5) * cellH * 0.4;
       nd.vx = 0;
       nd.vy = 0;
     });
@@ -134,20 +134,20 @@ const Graph = (() => {
     simulation = d3.forceSimulation(nodesData)
       .force('link', d3.forceLink(linksData)
         .id(d => d.id)
-        .distance(50)
-        .strength(0.4)
+        .distance(40)
+        .strength(0.3)
       )
       .force('charge', d3.forceManyBody()
-        .strength(-120)
-        .distanceMax(250)
+        .strength(-80)       // menos repulsión = respeta mas la grilla inicial
+        .distanceMax(200)
       )
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collide', d3.forceCollide()
-        .radius(d => 8 + Math.sqrt(d.degree || 0) * 2.5)
-        .iterations(2)
+        .radius(d => 10 + Math.sqrt(d.degree || 0) * 2.5)
+        .iterations(3)
       )
-      .alpha(1)
-      .alphaDecay(0.025)
+      .alpha(0.7)            // empezar con menos energia
+      .alphaDecay(0.03)      // converger mas rapido
       .on('tick', () => {
         linkSel
           .attr('x1', d => d.source.x)
