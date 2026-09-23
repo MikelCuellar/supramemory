@@ -1,10 +1,10 @@
 """Endpoints de ingest / sync."""
 from fastapi import APIRouter, Depends
 
-from api.core.security import require_api_key
+from api.core.security import require_admin
 from api.services.connectors import local_vault
 
-router = APIRouter(prefix="/ingest", tags=["ingest"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/ingest", tags=["ingest"], dependencies=[Depends(require_admin)])
 
 
 @router.post("/vault")

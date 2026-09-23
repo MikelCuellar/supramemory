@@ -16,6 +16,10 @@ from api.services.markdown import (
     slugify,
 )
 
+# Re-export para que otros módulos puedan importar directo
+__all__ = ["slugify", "create_note", "get_note", "list_notes", "update_note",
+           "delete_note", "sync_vault_to_db"]
+
 
 def _generate_id(title: str, provided: str | None = None) -> str:
     """Genera ID determinista basado en título-slug, o usa el provisto."""

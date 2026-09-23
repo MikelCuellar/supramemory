@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 
 from api.core.config import settings
 from api.core.db import init_db
-from api.routers import graph, health, ingest, notes, query
+from api.routers import agents, graph, health, ingest, notes, query, tokens
 from api.services.connectors.local_vault import ingest_local_vault
 
 logging.basicConfig(
@@ -44,6 +44,8 @@ app.include_router(notes.router)
 app.include_router(query.router)
 app.include_router(graph.router)
 app.include_router(ingest.router)
+app.include_router(agents.router)
+app.include_router(tokens.router)
 
 
 @app.on_event("startup")

@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, Query
 
 from api.core.db import get_db
 from api.core.models import GraphEdge, GraphNode, GraphResponse
-from api.core.security import require_api_key
+from api.core.security import require_read
 
-router = APIRouter(prefix="/graph", tags=["graph"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/graph", tags=["graph"], dependencies=[Depends(require_read)])
 
 
 @router.get("", response_model=GraphResponse)

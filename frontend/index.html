@@ -6,20 +6,26 @@
   <title>Supramemory</title>
   <link rel="stylesheet" href="/static/css/theme.css">
   <link rel="stylesheet" href="/static/css/graph.css">
+  <link rel="stylesheet" href="/static/css/panels.css">
 </head>
 <body>
   <div id="app">
-    <!-- Top bar con búsqueda + filtros -->
+    <!-- Top bar -->
     <header id="topbar">
       <div class="brand">
         <span class="brand-dot"></span>
         <span class="brand-name">Supramemory</span>
       </div>
+      <nav id="tabs" class="tabs">
+        <button class="tab active" data-tab="graph">Graph</button>
+        <button class="tab" data-tab="tokens">API Tokens</button>
+        <button class="tab" data-tab="docs">Docs</button>
+      </nav>
       <div class="search-wrap">
         <input
           id="search-input"
           type="text"
-          placeholder="Buscar nodo, tag, texto... (presiona Enter para resaltar)"
+          placeholder="Buscar nodo, tag, texto..."
           autocomplete="off"
         />
       </div>
@@ -33,24 +39,90 @@
       </div>
     </header>
 
-    <!-- Canvas del grafo fullscreen -->
-    <main id="graph-container">
-      <svg id="graph-svg">
-        <g id="graph-root"></g>
-      </svg>
+    <!-- TAB: GRAPH -->
+    <main id="tab-graph" class="tab-panel active">
+      <div id="graph-container">
+        <svg id="graph-svg">
+          <g id="graph-root"></g>
+        </svg>
+      </div>
+      <aside id="side-panel" class="collapsed">
+        <button id="close-panel" title="Cerrar">×</button>
+        <div id="panel-content"></div>
+      </aside>
+      <div id="legend">
+        <div class="legend-title">Leyenda</div>
+        <div id="legend-items"></div>
+      </div>
     </main>
 
-    <!-- Panel lateral: detalle del nodo seleccionado -->
-    <aside id="side-panel" class="collapsed">
-      <button id="close-panel" title="Cerrar">×</button>
-      <div id="panel-content"></div>
-    </aside>
+    <!-- TAB: TOKENS -->
+    <main id="tab-tokens" class="tab-panel">
+      <div class="panel-container">
+        <div class="panel-header">
+          <h2>API Tokens</h2>
+          <p class="muted">Tokens para que los agentes IA accedan al grafo de Supramemory. Cada token tiene nombre, scopes y expiración opcional.</p>
+        </div>
 
-    <!-- Leyenda discreta -->
-    <div id="legend">
-      <div class="legend-title">Leyenda</div>
-      <div id="legend-items"></div>
-    </div>
+        <div class="panel-section">
+          <h3>Crear nuevo token</h3>
+          <form id="token-form" class="form-row">
+            <input id="token-name" placeholder="Nombre del token (ej: Hermes Agent)" required>
+            <select id="token-scopes" multiple size="3">
+              <option value="read" selected>read — GET endpoints</option>
+              <option value="write">write — POST/PATCH/DELETE</option>
+              <option value="admin">admin — todo + gestión tokens</option>
+            </select>
+            <input id="token-expiry" type="datetime-local" placeholder="Expiración (opcional)">
+            <button type="submit">Crear token</button>
+          </form>
+          <div id="token-result" class="hidden">
+            <h4>Token generado — guardalo ya, no se puede volver a ver</h4>
+            <pre id="token-plain"></pre>
+            <button id="copy-token">Copiar</button>
+            <button id="token-result-close">Cerrar</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Tokens existentes</h3>
+          <table id="tokens-table">
+            <thead>
+              <tr><th>Nombre</th><th>Scopes</th><th>Creado</th><th>Último uso</th><th>Expira</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody id="tokens-tbody">
+              <tr><td colspan="7" class="muted center">Cargando...</td></tr>
+            </tbody>
+          </table>
+          <label class="checkbox-row">
+            <input type="checkbox" id="show-revoked"> Mostrar revocados/borrados
+          </label>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB: DOCS -->
+    <main id="tab-docs" class="tab-panel">
+      <div class="panel-container docs-container">
+        <div class="docs-toc">
+          <h4>Contenidos</h4>
+          <ul>
+            <li><a href="#quickstart">Quickstart</a></li>
+            <li><a href="#auth">Autenticación</a></li>
+            <li><a href="#endpoints">Endpoints</a></li>
+            <li><a href="#agents">Para agentes IA</a></li>
+            <li><a href="#scopes">Scopes y seguridad</a></li>
+            <li><a href="#examples">Ejemplos</a></li>
+          </ul>
+          <hr>
+          <p class="muted small">OpenAPI completo: <a href="/openapi.json" target="_blank">/openapi.json</a></p>
+          <p class="muted small">Swagger UI: <a href="/docs" target="_blank">/docs</a></p>
+        </div>
+        <div class="docs-content" id="docs-content">
+          <p>Cargando documentación...</p>
+        </div>
+      </div>
+    </main>
 
     <!-- Status bar inferior -->
     <footer id="statusbar">
@@ -62,11 +134,14 @@
     </footer>
   </div>
 
-  <!-- D3 v7 desde CDN (versión fija para reproducibilidad) -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
   <script src="/static/js/api.js"></script>
+  <script src="/static/js/tokens.js"></script>
+  <script src="/static/js/agents.js"></script>
   <script src="/static/js/filters.js"></script>
   <script src="/static/js/graph.js"></script>
+  <script src="/static/js/tabs.js"></script>
+  <script src="/static/js/docs.js"></script>
   <script src="/static/js/app.js"></script>
 </body>
 </html>

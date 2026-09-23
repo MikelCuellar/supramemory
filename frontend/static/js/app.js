@@ -138,3 +138,105 @@
       .replace(/"/g, '&quot;');
   }
 })();
+
+// === Tokens tab logic ===
+async function loadTokens() {
+  const tbody = document.getElementById('tokens-tbody');
+  if (!tbody) return;
+  const showRevoked = document.getElementById('show-revoked').checked;
+  try {
+    const tokens = await Tokens.list(showRevoked);
+    if (!tokens.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="muted center">No hay tokens todavía. Creá uno arriba.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = tokens.map(t => {
+      const scopes = t.scopes.split(',').map(s =>
+        `<span class="scope-tag">${s.trim()}</span>`
+      ).join(' ');
+      const status = t.revoked
+        ? '<span class="status-revoked">revoked</span>'
+        : '<span class="status-active">active</span>';
+      const actions = t.revoked
+        ? `<button class="btn-mini danger" onclick="deleteToken('${escapeAttr(t.name)}')">Borrar</button>`
+        : `<button class="btn-mini" onclick="revokeToken('${escapeAttr(t.name)}')">Revocar</button>
+           <button class="btn-mini danger" onclick="deleteToken('${escapeAttr(t.name)}')">Borrar</button>`;
+      return `<tr>
+        <td><strong>${escapeHtml(t.name)}</strong></td>
+        <td>${scopes}</td>
+        <td>${t.created_at ? t.created_at.substring(0, 19) : '—'}</td>
+        <td>${t.last_used_at ? t.last_used_at.substring(0, 19) : '—'}</td>
+        <td>${t.expires_at || '—'}</td>
+        <td>${status}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" class="muted center">Error: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+
+async function revokeToken(name) {
+  if (!confirm(`Revocar token "${name}"? Queda en la DB pero no se puede usar más.`)) return;
+  try {
+    await Tokens.revoke(name);
+    await loadTokens();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function deleteToken(name) {
+  if (!confirm(`Borrar token "${name}" permanentemente? Esta acción no se puede deshacer.`)) return;
+  try {
+    await Tokens.delete(name);
+    await loadTokens();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// Hook form
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('token-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('token-name').value.trim();
+      const scopes = Array.from(document.getElementById('token-scopes').selectedOptions)
+        .map(o => o.value);
+      const expiry = document.getElementById('token-expiry').value;
+      const expires_at = expiry ? new Date(expiry).toISOString() : null;
+
+      try {
+        const result = await Tokens.create(name, scopes, expires_at);
+        document.getElementById('token-plain').textContent = result.token;
+        document.getElementById('token-result').classList.remove('hidden');
+        form.reset();
+        await loadTokens();
+      } catch (err) {
+        alert(`Error creando token: ${err.message}`);
+      }
+    });
+  }
+
+  document.getElementById('copy-token')?.addEventListener('click', () => {
+    const text = document.getElementById('token-plain').textContent;
+    navigator.clipboard.writeText(text);
+    alert('Token copiado al portapapeles');
+  });
+
+  document.getElementById('token-result-close')?.addEventListener('click', () => {
+    document.getElementById('token-result').classList.add('hidden');
+  });
+
+  document.getElementById('show-revoked')?.addEventListener('change', loadTokens);
+});
+
+window.loadTokens = loadTokens;
+window.revokeToken = revokeToken;
+window.deleteToken = deleteToken;

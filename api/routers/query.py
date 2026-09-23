@@ -2,10 +2,10 @@
 from fastapi import APIRouter, Depends, Query
 
 from api.core.models import ContextResponse
-from api.core.security import require_api_key
+from api.core.security import require_read
 from api.services import search as search_svc
 
-router = APIRouter(prefix="", tags=["query"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="", tags=["query"], dependencies=[Depends(require_read)])
 
 
 @router.get("/query")

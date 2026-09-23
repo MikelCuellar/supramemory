@@ -57,6 +57,20 @@ CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
 CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
     title, content, content='', tokenize='porter unicode61'
 );
+
+-- API Tokens (multi-key, scoped)
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    key_hash TEXT NOT NULL UNIQUE,
+    scopes TEXT NOT NULL DEFAULT 'read',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP,
+    expires_at TIMESTAMP,
+    revoked INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_tokens_revoked ON api_tokens(revoked);
+CREATE INDEX IF NOT EXISTS idx_tokens_hash ON api_tokens(key_hash);
 """
 
 
