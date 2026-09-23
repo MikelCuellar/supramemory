@@ -122,13 +122,15 @@ body {
 
 /* Graph container */
 #graph-container {
-  flex: 1;
+  flex: 1 1 auto;
   position: relative;
   overflow: hidden;
-  min-height: 0;  /* importante para flex:1 con overflow */
+  min-height: 0;  /* necesario para flex con overflow */
+  min-width: 0;
 }
 
 #graph-svg {
+  display: block;
   width: 100%;
   height: 100%;
   cursor: grab;

@@ -35,11 +35,15 @@
   grid-area: graph;
   position: relative;
   overflow: hidden;
+  min-height: 0;       /* necesario para que flex children con overflow funcionen */
+  min-width: 0;
 }
 
 .tab-panel.active {
   display: flex;
   flex-direction: column;
+  height: 100%;        /* llenar la celda del grid */
+  width: 100%;
 }
 
 .panel-container {
