@@ -1,25 +1,35 @@
 // Cliente API para Supramemory
 const API = (() => {
-  const KEY = localStorage.getItem('supramemory_api_key') || '';
+  const KEY_STORAGE = 'supramemory_api_key';
 
   function setKey(k) {
-    localStorage.setItem('supramemory_api_key', k);
+    if (!k) {
+      localStorage.removeItem(KEY_STORAGE);
+    } else {
+      localStorage.setItem(KEY_STORAGE, k);
+    }
+  }
+
+  function getKey() {
+    return localStorage.getItem(KEY_STORAGE) || '';
   }
 
   function authHeaders() {
-    return KEY ? { 'Authorization': `Bearer ${KEY}` } : {};
+    const k = getKey();
+    return k ? { 'Authorization': `Bearer ${k}` } : {};
   }
 
   async function req(path, opts = {}) {
     const headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(opts.headers || {}) };
     const res = await fetch(path, { ...opts, headers });
     if (res.status === 401 || res.status === 403) {
-      const k = prompt('Supramemory requiere API key. Pegala acá:');
+      // pedir key UNA vez, guardarla, y reintentar
+      const k = window.prompt('Supramemory requiere API key. Pegala aca:');
       if (k) {
         setKey(k);
-        return req(path, opts);
+        return req(path, opts);  // reintento con la nueva key
       }
-      throw new Error('Unauthorized');
+      throw new Error('Unauthorized - no API key provided');
     }
     if (!res.ok) {
       const text = await res.text();
@@ -31,6 +41,7 @@ const API = (() => {
 
   return {
     setKey,
+    getKey,
     health: () => req('/health'),
     listNotes: (params = {}) => {
       const qs = new URLSearchParams(params).toString();
