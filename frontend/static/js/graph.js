@@ -52,7 +52,15 @@ const Graph = (() => {
   }
 
   function render(graphData) {
-    measure();
+    // Re-medir después de un frame, para asegurar que el CSS ya aplicó
+    // y el container tiene dimensiones reales.
+    requestAnimationFrame(() => {
+      measure();
+      doRender(graphData);
+    });
+  }
+
+  function doRender(graphData) {
     nodesData = graphData.nodes.map(n => ({ ...n }));
     linksData = graphData.edges.map(e => ({ ...e }));
 
@@ -68,11 +76,20 @@ const Graph = (() => {
       .attr('stroke-width', d => Math.max(0.5, Math.sqrt(d.weight || 1) * 0.8))
       .attr('stroke-opacity', 0.4);
 
-    // Posicion inicial: scatter random cerca del centro (antes de que la sim arranque)
-    const cx0 = width / 2, cy0 = height / 2;
-    nodesData.forEach((n) => {
-      n.x = cx0 + (Math.random() - 0.5) * Math.min(width, 400);
-      n.y = cy0 + (Math.random() - 0.5) * Math.min(height, 400);
+    // Posicion inicial: distribuir en grilla centrada (no scatter random chico)
+    const n = nodesData.length;
+    const cols = Math.ceil(Math.sqrt(n));
+    const cellW = Math.min(width / (cols + 1), 120);
+    const cellH = Math.min(height / (Math.ceil(n / cols) + 1), 80);
+    const startX = (width - cols * cellW) / 2 + cellW / 2;
+    const startY = (height - Math.ceil(n / cols) * cellH) / 2 + cellH / 2;
+    nodesData.forEach((nd, i) => {
+      const c = i % cols;
+      const r = Math.floor(i / cols);
+      nd.x = startX + c * cellW + (Math.random() - 0.5) * cellW * 0.3;
+      nd.y = startY + r * cellH + (Math.random() - 0.5) * cellH * 0.3;
+      nd.vx = 0;
+      nd.vy = 0;
     });
 
     const nodeGroup = gRoot.append('g')
@@ -99,7 +116,7 @@ const Graph = (() => {
       .attr('y', 3)
       .text(d => truncate(d.label, 30));
 
-    // Force simulation - ajustada para 50+ nodos, links mas cortos
+    // Force simulation
     simulation = d3.forceSimulation(nodesData)
       .force('link', d3.forceLink(linksData)
         .id(d => d.id)
@@ -128,9 +145,14 @@ const Graph = (() => {
 
     Graph._simulation = simulation;
 
+    // Reset zoom después de que la sim arranque
     setTimeout(() => {
-      if (zoomBehavior) svg.call(zoomBehavior.transform, d3.zoomIdentity);
-    }, 800);
+      if (zoomBehavior) {
+        svg.call(zoomBehavior.transform, d3.zoomIdentity);
+        // Forzar re-layout por si quedo chico
+        simulation.alpha(0.5).restart();
+      }
+    }, 600);
   }
 
   function truncate(s, n) {
