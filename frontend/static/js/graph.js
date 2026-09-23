@@ -113,9 +113,18 @@ const Graph = (() => {
       .join('g')
       .attr('class', d => `node source-${d.source}`)
       .attr('transform', d => `translate(${d.x},${d.y})`)
+      .call(makeDrag())
       .on('click', (event, d) => {
         event.stopPropagation();
         selectNode(d);
+      })
+      .on('dblclick', (event, d) => {
+        event.stopPropagation();
+        // Doble click libera el nodo pinned
+        d.fx = null;
+        d.fy = null;
+        d3.select(event.currentTarget).classed('pinned', false);
+        if (simulation) simulation.alpha(0.3).restart();
       })
       .on('mouseenter', (event, d) => highlightConnections(d))
       .on('mouseleave', () => clearHighlight());
@@ -167,6 +176,32 @@ const Graph = (() => {
 
   function truncate(s, n) {
     return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  }
+
+  function makeDrag() {
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+      d3.select(this).classed('pinned', true);
+      // evitar que el evento se propague al zoom handler del SVG
+      event.sourceEvent.stopPropagation();
+    }
+    function dragged(event, d) {
+      // event.x/event.y ya vienen en coordenadas locales del SVG
+      // (D3 v7 aplica el transform del zoom automaticamente)
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      // El nodo queda pinned donde el usuario lo soltó.
+      // Doble-click lo libera.
+    }
+    return d3.drag()
+      .on('start', dragstarted)
+      .on('drag', dragged)
+      .on('end', dragended);
   }
 
   function selectNode(d) {
