@@ -154,7 +154,8 @@ body {
 }
 
 #side-panel.collapsed {
-  transform: translateX(100%);
+  transform: translateX(calc(100% + 50px));
+  pointer-events: none;
 }
 
 #close-panel {

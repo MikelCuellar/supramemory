@@ -61,6 +61,16 @@ const Graph = (() => {
   }
 
   function doRender(graphData) {
+    // safety check: si el SVG aun no tiene tamaño, reintentar en el siguiente frame
+    if (width < 100 || height < 100) {
+      console.warn('SVG size too small, retrying:', width, height);
+      requestAnimationFrame(() => {
+        measure();
+        doRender(graphData);
+      });
+      return;
+    }
+
     nodesData = graphData.nodes.map(n => ({ ...n }));
     linksData = graphData.edges.map(e => ({ ...e }));
 
@@ -76,13 +86,17 @@ const Graph = (() => {
       .attr('stroke-width', d => Math.max(0.5, Math.sqrt(d.weight || 1) * 0.8))
       .attr('stroke-opacity', 0.4);
 
-    // Posicion inicial: distribuir en grilla centrada (no scatter random chico)
+    // Posicion inicial: distribuir en grilla centrada
     const n = nodesData.length;
     const cols = Math.ceil(Math.sqrt(n));
-    const cellW = Math.min(width / (cols + 1), 120);
-    const cellH = Math.min(height / (Math.ceil(n / cols) + 1), 80);
-    const startX = (width - cols * cellW) / 2 + cellW / 2;
-    const startY = (height - Math.ceil(n / cols) * cellH) / 2 + cellH / 2;
+    const rows = Math.ceil(n / cols);
+    const cellW = Math.min((width * 0.7) / cols, 140);
+    const cellH = Math.min((height * 0.7) / rows, 100);
+    const gridW = cols * cellW;
+    const gridH = rows * cellH;
+    const startX = (width - gridW) / 2 + cellW / 2;
+    const startY = (height - gridH) / 2 + cellH / 2;
+    console.log('Grid layout:', { n, cols, rows, cellW, cellH, startX, startY, width, height });
     nodesData.forEach((nd, i) => {
       const c = i % cols;
       const r = Math.floor(i / cols);
@@ -145,14 +159,10 @@ const Graph = (() => {
 
     Graph._simulation = simulation;
 
-    // Reset zoom después de que la sim arranque
+    // No aplicar zoom reset agresivo. Solo un heat final.
     setTimeout(() => {
-      if (zoomBehavior) {
-        svg.call(zoomBehavior.transform, d3.zoomIdentity);
-        // Forzar re-layout por si quedo chico
-        simulation.alpha(0.5).restart();
-      }
-    }, 600);
+      if (simulation) simulation.alpha(0.3).restart();
+    }, 1500);
   }
 
   function truncate(s, n) {
