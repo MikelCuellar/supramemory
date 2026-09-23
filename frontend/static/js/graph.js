@@ -1,10 +1,24 @@
 // Motor del grafo — D3 force-directed brain-like layout
-// Features: drag, zoom, pan, click-to-pin, doble-click-release, búsqueda, panel lateral
+// Features: drag, zoom, pan, click-to-pin, doble-click-release, busqueda, panel lateral
 const Graph = (() => {
-  let svg, gRoot, simulation;
+  let svg, gRoot, simulation, zoomBehavior;
   let nodesData = [], linksData = [];
   let selectedNode = null;
   let onSelectCallback = null;
+
+  function getSvgSize() {
+    if (!svg) return { w: 800, h: 600 };
+    const node = svg.node();
+    const r = node.getBoundingClientRect();
+    return { w: r.width || 800, h: r.height || 600 };
+  }
+
+  function recenter() {
+    if (!simulation) return;
+    const { w, h } = getSvgSize();
+    simulation.force('center', d3.forceCenter(w / 2, h / 2));
+    simulation.alpha(0.3).restart();
+  }
 
   function init(onSelect) {
     onSelectCallback = onSelect;
@@ -12,17 +26,18 @@ const Graph = (() => {
     gRoot = svg.select('#graph-root');
 
     // Zoom + pan
-    const zoom = d3.zoom()
+    zoomBehavior = d3.zoom()
       .scaleExtent([0.1, 8])
       .filter((event) => {
-        // Permitir pan/drag sobre el fondo, no sobre nodos
+        // Permitir wheel SIEMPRE (aunque sea sobre un nodo)
         if (event.type === 'wheel') return true;
+        // Para drag/pan, solo si no es sobre un nodo
         return !event.target.closest('.node');
       })
       .on('zoom', (event) => {
         gRoot.attr('transform', event.transform);
       });
-    svg.call(zoom);
+    svg.call(zoomBehavior);
 
     // Click en el fondo deselecciona
     svg.on('click', (event) => {
@@ -31,11 +46,13 @@ const Graph = (() => {
       }
     });
 
-    // Resize handler
+    // Resize handler — recentrar y reajustar
+    let resizeTimer = null;
     window.addEventListener('resize', () => {
-      if (simulation) {
-        simulation.alpha(0.3).restart();
-      }
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        recenter();
+      }, 200);
     });
   }
 
@@ -70,7 +87,6 @@ const Graph = (() => {
       })
       .on('dblclick', (event, d) => {
         event.stopPropagation();
-        // Doble click libera nodo pinned
         d.fx = null;
         d.fy = null;
         d3.select(event.currentTarget).classed('pinned', false);
@@ -93,7 +109,8 @@ const Graph = (() => {
       .attr('y', 3)
       .text(d => d.label);
 
-    // Force simulation — brain-like: repulsión fuerte, links cortos
+    // Force simulation — usando tamaño REAL del SVG, no de window
+    const { w: svgW, h: svgH } = getSvgSize();
     simulation = d3.forceSimulation(nodesData)
       .force('link', d3.forceLink(linksData)
         .id(d => d.id)
@@ -101,13 +118,10 @@ const Graph = (() => {
         .strength(0.3)
       )
       .force('charge', d3.forceManyBody()
-        .strength(-280)            // repulsión fuerte
+        .strength(-280)
         .distanceMax(400)
       )
-      .force('center', d3.forceCenter(
-        window.innerWidth / 2,
-        (window.innerHeight - 72) / 2
-      ))
+      .force('center', d3.forceCenter(svgW / 2, svgH / 2))
       .force('collide', d3.forceCollide()
         .radius(d => 8 + Math.sqrt(d.degree || 0) * 3 + 4)
         .iterations(2)
@@ -123,8 +137,10 @@ const Graph = (() => {
         nodeGroup.attr('transform', d => `translate(${d.x},${d.y})`);
       });
 
-    // Guardar sim en variable de closure para acceso externo
     Graph._simulation = simulation;
+
+    // Reset zoom al inicio para que se vea centrado
+    svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
   }
 
   function makeDrag() {
@@ -140,8 +156,6 @@ const Graph = (() => {
     }
     function dragended(event, d) {
       if (!event.active) simulation.alphaTarget(0);
-      // Dejar pinned donde el usuario lo soltó
-      // Para liberar: doble click
     }
     return d3.drag()
       .on('start', dragstarted)
@@ -198,14 +212,13 @@ const Graph = (() => {
     gRoot.selectAll('.node').classed('highlight', n =>
       matches.some(m => m.id === n.id)
     );
-    // Centrar en el primer match
     if (matches[0]) {
       const m = matches[0];
-      const svgNode = svg.node();
+      const { w, h } = getSvgSize();
       const transform = d3.zoomIdentity
-        .translate(window.innerWidth / 2 - m.x, (window.innerHeight - 72) / 2 - m.y)
+        .translate(w / 2 - m.x, h / 2 - m.y)
         .scale(1.5);
-      svg.transition().duration(500).call(d3.zoom().transform, transform);
+      svg.transition().duration(500).call(zoomBehavior.transform, transform);
     }
   }
 
@@ -213,9 +226,20 @@ const Graph = (() => {
     if (simulation) simulation.alpha(alpha).restart();
   }
 
+  // API publica: zoom in/out/reset (para los botones UI)
+  function zoomBy(factor) {
+    if (!zoomBehavior) return;
+    svg.transition().duration(300).call(zoomBehavior.scaleBy, factor);
+  }
+
+  function zoomReset() {
+    if (!zoomBehavior) return;
+    svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
+  }
+
   return {
     init, selectNode, deselect, render, highlightByText, reheat,
-    setSelectedStatus,
+    setSelectedStatus, zoomBy, zoomReset, recenter,
     get simulation() { return Graph._simulation; },
   };
 })();

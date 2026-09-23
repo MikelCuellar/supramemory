@@ -78,3 +78,39 @@
   stroke-width: 3;
   filter: drop-shadow(0 0 6px var(--accent));
 }
+
+/* Zoom controls overlay */
+#zoom-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+#zoom-controls button {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+#zoom-controls button:hover {
+  background: var(--accent);
+  border-color: var(--accent-bright);
+}
+
+#zoom-controls button:active {
+  transform: scale(0.95);
+}

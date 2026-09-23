@@ -27,6 +27,14 @@
     Graph.deselect();
   });
 
+  // Zoom controls
+  const zin = document.getElementById('zoom-in');
+  const zout = document.getElementById('zoom-out');
+  const zreset = document.getElementById('zoom-reset');
+  if (zin) zin.addEventListener('click', () => Graph.zoomBy(1.4));
+  if (zout) zout.addEventListener('click', () => Graph.zoomBy(1 / 1.4));
+  if (zreset) zreset.addEventListener('click', () => Graph.zoomReset());
+
   // Search
   let searchTimer = null;
   searchInput.addEventListener('input', (e) => {
