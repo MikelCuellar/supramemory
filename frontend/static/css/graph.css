@@ -1,72 +1,92 @@
-/* Graph-specific styles — nodos, aristas, labels */
+/* Graph-specific styles - nodos, aristas, labels */
 
 .node {
   cursor: pointer;
   transition: stroke-width 0.15s, stroke 0.15s;
 }
 
+/* Colores por source usando CSS variables */
 .node circle {
-  fill: var(--accent);
-  stroke: var(--accent-dim);
   stroke-width: 1.5;
-  transition: r 0.2s, fill 0.15s, stroke 0.15s;
+  transition: r 0.2s, fill 0.15s, stroke 0.15s, stroke-width 0.15s;
 }
 
+.node.source-teclera circle  { fill: var(--c-teclera);  stroke: var(--c-teclera-dim); }
+.node.source-geojobs circle  { fill: var(--c-geojobs);  stroke: var(--c-geojobs-dim); }
+.node.source-totem circle    { fill: var(--c-totem);    stroke: var(--c-totem-dim); }
+.node.source-emerald circle  { fill: var(--c-emerald);  stroke: var(--c-emerald-dim); }
+.node.source-vault circle    { fill: var(--c-vault);    stroke: var(--c-vault-dim); }
+.node.source-manual circle   { fill: var(--c-manual);   stroke: var(--c-manual-dim); }
+.node.source-telegram circle { fill: var(--c-telegram); stroke: var(--c-telegram-dim); }
+.node.source-pdf circle      { fill: var(--c-pdf);      stroke: var(--c-pdf-dim); }
+.node.source-session circle  { fill: var(--c-session);  stroke: var(--c-session-dim); }
+.node.source-email circle    { fill: var(--c-email);    stroke: var(--c-email-dim); }
+.node.source-stub circle     { fill: var(--c-stub);     stroke: var(--c-stub-dim); }
+/* Agent sources (agent:master, agent:hermes, etc.) */
+.node[class*="source-agent"] circle { fill: var(--c-agent); stroke: var(--c-agent-dim); }
+/* Fallback */
+.node circle                 { fill: var(--c-default);  stroke: var(--c-default-dim); }
+
 .node:hover circle {
-  stroke: var(--accent-bright);
-  stroke-width: 2;
+  stroke: var(--fg);
+  stroke-width: 2.5;
 }
 
 .node.selected circle {
-  stroke: #fff;
-  stroke-width: 2.5;
+  stroke: var(--fg);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px var(--accent));
 }
 
 .node.pinned circle {
   stroke: var(--accent-bright);
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
 
 .node-label {
-  fill: #ffffff;
+  fill: var(--label-fill);
   font-size: 11px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   pointer-events: none;
   paint-order: stroke;
-  stroke: #0a0a0a;
+  stroke: var(--label-stroke);
   stroke-width: 3px;
   stroke-linejoin: round;
   text-anchor: start;
   dominant-baseline: middle;
 }
 
+/* Links por kind */
 .link {
-  stroke: #3a3a3a;
-  stroke-opacity: 0.5;
   fill: none;
+  stroke-opacity: 0.6;
 }
 
-.link.semantic {
-  stroke-dasharray: 2 4;
-  stroke-opacity: 0.3;
-}
-
-.link.temporal {
-  stroke-dasharray: 4 2;
-  stroke-opacity: 0.3;
-}
-
-.link.entity {
+.link.wikilink {
+  stroke: var(--link-wikilink);
   stroke-opacity: 0.4;
 }
 
-/* Colores de nodo por source */
-.node.source-manual circle { fill: var(--accent); }
-.node.source-telegram circle { fill: #4a9eff; stroke: #2a7adf; }
-.node.source-vault circle { fill: var(--accent); }
-.node.source-pdf circle { fill: #ff8c42; stroke: #cc6a30; }
-.node.source-session circle { fill: #b56cff; stroke: #8a4fcc; }
-.node.source-email circle { fill: #ffd84a; stroke: #ccaa30; }
+.link.semantic {
+  stroke: var(--link-semantic);
+  stroke-opacity: 0.35;
+  stroke-dasharray: 3 3;
+}
+
+.link.entity {
+  stroke: var(--link-entity);
+  stroke-opacity: 0.45;
+}
+
+.link.temporal {
+  stroke: var(--link-temporal);
+  stroke-opacity: 0.4;
+  stroke-dasharray: 5 2;
+}
+
+.link:not(.wikilink):not(.semantic):not(.entity):not(.temporal) {
+  stroke: var(--link-default);
+}
 
 /* Hover/click affordances */
 .node.dim circle { opacity: 0.2; }
@@ -74,7 +94,7 @@
 .link.dim { stroke-opacity: 0.05; }
 
 .node.highlight circle {
-  stroke: var(--accent-bright);
+  stroke: var(--fg);
   stroke-width: 3;
   filter: drop-shadow(0 0 6px var(--accent));
 }
@@ -95,22 +115,53 @@
   height: 36px;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
+  background: var(--bg-elevated);
+  color: var(--fg);
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 
 #zoom-controls button:hover {
   background: var(--accent);
+  color: var(--text-on-accent);
   border-color: var(--accent-bright);
 }
 
 #zoom-controls button:active {
+  transform: scale(0.95);
+}
+
+/* Theme toggle button */
+#theme-toggle {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--fg);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  z-index: 10;
+}
+
+#theme-toggle:hover {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent-bright);
+}
+
+#theme-toggle:active {
   transform: scale(0.95);
 }

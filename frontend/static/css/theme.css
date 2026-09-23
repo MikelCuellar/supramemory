@@ -1,5 +1,6 @@
 /* Supramemory — dark theme matching reference graph view */
 :root {
+  /* Dark theme (default) */
   --bg: #0a0a0a;
   --bg-elevated: #141414;
   --bg-panel: #1a1a1a;
@@ -7,12 +8,74 @@
   --border-hover: #3a3a3a;
   --fg: #e8e8e8;
   --fg-muted: #888;
-  --accent: #a8e10c;          /* verde-lima de la referencia */
+  --accent: #a8e10c;          /* verde-lima (geojobs) */
   --accent-bright: #c7ff3a;
   --accent-dim: #7ab000;
   --text-on-accent: #0a0a0a;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+  /* Colores por source */
+  --c-teclera: #22d3ee;       /* cyan */
+  --c-teclera-dim: #0e7490;
+  --c-geojobs: #a8e10c;       /* verde-lima */
+  --c-geojobs-dim: #7ab000;
+  --c-totem: #fb923c;         /* naranja */
+  --c-totem-dim: #c2410c;
+  --c-emerald: #a78bfa;       /* violeta */
+  --c-emerald-dim: #6d28d9;
+  --c-vault: #cbd5e1;         /* gris claro */
+  --c-vault-dim: #64748b;
+  --c-agent: #2dd4bf;         /* turquesa */
+  --c-agent-dim: #0f766e;
+  --c-manual: #a8e10c;        /* mismo que accent */
+  --c-manual-dim: #7ab000;
+  --c-telegram: #4a9eff;
+  --c-telegram-dim: #2a7adf;
+  --c-pdf: #ff8c42;
+  --c-pdf-dim: #cc6a30;
+  --c-session: #b56cff;
+  --c-session-dim: #8a4fcc;
+  --c-email: #ffd84a;
+  --c-email-dim: #ccaa30;
+  --c-stub: #ff6b6b;
+  --c-stub-dim: #b91c1c;
+  --c-default: #94a3b8;
+  --c-default-dim: #475569;
+
+  /* Colores por link kind */
+  --link-wikilink: #ffffff;
+  --link-semantic: #22d3ee;
+  --link-entity: #a78bfa;
+  --link-temporal: #fbbf24;
+  --link-default: #4a4a4a;
+
+  /* Color del label */
+  --label-fill: #ffffff;
+  --label-stroke: #0a0a0a;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+}
+
+/* Light theme - toggle con clase .light en <body> */
+body.light {
+  --bg: #f8fafc;
+  --bg-elevated: #ffffff;
+  --bg-panel: #f1f5f9;
+  --border: #cbd5e1;
+  --border-hover: #94a3b8;
+  --fg: #0f172a;
+  --fg-muted: #64748b;
+  --accent: #65a30d;
+  --accent-bright: #84cc16;
+  --accent-dim: #4d7c0f;
+  --text-on-accent: #ffffff;
+  --label-fill: #0f172a;
+  --label-stroke: #ffffff;
+  --link-wikilink: #1e293b;
+  --link-semantic: #0891b2;
+  --link-entity: #7c3aed;
+  --link-temporal: #d97706;
+  --link-default: #94a3b8;
 }
 
 * {

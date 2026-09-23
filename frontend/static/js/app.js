@@ -35,6 +35,22 @@
   if (zout) zout.addEventListener('click', () => Graph.zoomBy(1 / 1.4));
   if (zreset) zreset.addEventListener('click', () => Graph.zoomReset());
 
+  // Theme toggle (light/dark)
+  const THEME_KEY = 'supramemory_theme';
+  const themeBtn = document.getElementById('theme-toggle');
+  function applyTheme(theme) {
+    document.body.classList.toggle('light', theme === 'light');
+    if (themeBtn) themeBtn.textContent = theme === 'light' ? '☾' : '☀';
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const next = document.body.classList.contains('light') ? 'dark' : 'light';
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    });
+  }
+
   // Search
   let searchTimer = null;
   searchInput.addEventListener('input', (e) => {
@@ -126,15 +142,25 @@
   }
 
   function sourceColor(source) {
-    const colors = {
-      manual: '#a8e10c',
-      vault: '#a8e10c',
-      telegram: '#4a9eff',
-      pdf: '#ff8c42',
-      session: '#b56cff',
-      email: '#ffd84a',
+    // Mapear source -> nombre de CSS variable
+    const map = {
+      teclera: '--c-teclera',
+      geojobs: '--c-geojobs',
+      totem: '--c-totem',
+      emerald: '--c-emerald',
+      vault: '--c-vault',
+      manual: '--c-manual',
+      telegram: '--c-telegram',
+      pdf: '--c-pdf',
+      session: '--c-session',
+      email: '--c-email',
+      stub: '--c-stub',
     };
-    return colors[source] || '#888';
+    // Soportar agent:* (agent:master, agent:hermes, etc.)
+    if (source && source.startsWith('agent')) return `var(--c-agent)`;
+    const varName = map[source];
+    if (!varName) return 'var(--c-default)';
+    return `var(${varName})`;
   }
 
   function escapeHtml(s) {
