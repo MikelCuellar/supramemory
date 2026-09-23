@@ -1,0 +1,11 @@
+# Nixpacks config para Dokploy
+# https://docs.nixpacks.com/configurationfile
+[build]
+builder = "python3.11"
+
+[start]
+cmd = "uvicorn api.main:app --host 0.0.0.0 --port 8000"
+
+[variables]
+PYTHON_VERSION = "3.11"
+PORT = "8000"
