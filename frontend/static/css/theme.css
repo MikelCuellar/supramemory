@@ -122,10 +122,10 @@ body {
 
 /* Graph container */
 #graph-container {
-  grid-area: graph;
-  background: var(--bg);
+  flex: 1;
   position: relative;
   overflow: hidden;
+  min-height: 0;  /* importante para flex:1 con overflow */
 }
 
 #graph-svg {
