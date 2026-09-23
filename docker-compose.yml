@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  supramemory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supramemory
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ./data/vault:/vault:rw
+      - ./data/db:/db:rw
+    environment:
+      - VAULT_PATH=/vault
+      - DB_PATH=/db/supramemory.db
+      - API_KEY=${API_KEY:-changeme-generate-a-real-key}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

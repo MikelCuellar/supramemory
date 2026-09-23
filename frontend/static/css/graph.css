@@ -1,0 +1,80 @@
+/* Graph-specific styles — nodos, aristas, labels */
+
+.node {
+  cursor: pointer;
+  transition: stroke-width 0.15s, stroke 0.15s;
+}
+
+.node circle {
+  fill: var(--accent);
+  stroke: var(--accent-dim);
+  stroke-width: 1.5;
+  transition: r 0.2s, fill 0.15s, stroke 0.15s;
+}
+
+.node:hover circle {
+  stroke: var(--accent-bright);
+  stroke-width: 2;
+}
+
+.node.selected circle {
+  stroke: #fff;
+  stroke-width: 2.5;
+}
+
+.node.pinned circle {
+  stroke: var(--accent-bright);
+  stroke-width: 2;
+}
+
+.node-label {
+  fill: #ffffff;
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #0a0a0a;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  text-anchor: start;
+  dominant-baseline: middle;
+}
+
+.link {
+  stroke: #3a3a3a;
+  stroke-opacity: 0.5;
+  fill: none;
+}
+
+.link.semantic {
+  stroke-dasharray: 2 4;
+  stroke-opacity: 0.3;
+}
+
+.link.temporal {
+  stroke-dasharray: 4 2;
+  stroke-opacity: 0.3;
+}
+
+.link.entity {
+  stroke-opacity: 0.4;
+}
+
+/* Colores de nodo por source */
+.node.source-manual circle { fill: var(--accent); }
+.node.source-telegram circle { fill: #4a9eff; stroke: #2a7adf; }
+.node.source-vault circle { fill: var(--accent); }
+.node.source-pdf circle { fill: #ff8c42; stroke: #cc6a30; }
+.node.source-session circle { fill: #b56cff; stroke: #8a4fcc; }
+.node.source-email circle { fill: #ffd84a; stroke: #ccaa30; }
+
+/* Hover/click affordances */
+.node.dim circle { opacity: 0.2; }
+.node.dim .node-label { opacity: 0.2; }
+.link.dim { stroke-opacity: 0.05; }
+
+.node.highlight circle {
+  stroke: var(--accent-bright);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--accent));
+}

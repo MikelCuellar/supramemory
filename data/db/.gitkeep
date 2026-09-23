@@ -1,0 +1,1 @@
+# Este archivo existe para que el volumen SQLite persista entre deploys

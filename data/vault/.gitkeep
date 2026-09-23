@@ -1,0 +1,2 @@
+# Este archivo existe para que el volumen persista en git pero no esté vacío
+# Las notas reales se crean vía API o montando archivos aquí
