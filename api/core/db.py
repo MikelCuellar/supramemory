@@ -53,9 +53,10 @@ CREATE TABLE IF NOT EXISTS tags (
 );
 CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
 
--- Full-text search
+-- Full-text search (non-contentless: content is stored inside the FTS table,
+-- which allows DELETE by rowid that the indexer needs).
 CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
-    title, content, content='', tokenize='porter unicode61'
+    title, content, tokenize='porter unicode61'
 );
 
 -- API Tokens (multi-key, scoped)
@@ -78,6 +79,14 @@ def init_db() -> None:
     """Inicializa el schema. Idempotente."""
     settings.db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(settings.db_path) as conn:
+        # Migracion: si notes_fts existe con content='' (contentless), borrarla
+        # para que se pueda recrear con el esquema nuevo (no contentless).
+        # Esto es necesario porque contentless FTS5 no permite DELETE por rowid.
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='notes_fts'"
+        ).fetchone()
+        if row and "content=''" in (row[0] or ""):
+            conn.execute("DROP TABLE notes_fts")
         conn.executescript(SCHEMA)
         conn.commit()
 
