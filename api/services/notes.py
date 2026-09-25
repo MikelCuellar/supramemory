@@ -189,6 +189,10 @@ def sync_vault_to_db() -> dict:
         except Exception as e:
             errors.append({"file": str(md_path), "error": str(e)})
 
+    # Resolver links globalmente al finalizar la ingesta
+    with get_db() as conn:
+        _resolve_all_links(conn)
+
     return {"synced": synced, "errors": errors}
 
 
@@ -212,12 +216,15 @@ def _sync_tags(conn: sqlite3.Connection, note_id: str, tags: list[str]) -> None:
 
 def _sync_links(conn: sqlite3.Connection, source_id: str,
                target_titles: list[str], kind: str = "wikilink") -> None:
-    """Sincroniza links, resolviendo target_id por título cuando posible."""
+    """Sincroniza links, resolviendo target_id por título/slug (case-insensitive) cuando posible."""
     conn.execute("DELETE FROM links WHERE source_id = ? AND kind = ?", (source_id, kind))
     for target_title in target_titles:
+        target_slug = slugify(target_title)
         target_row = conn.execute(
-            "SELECT id FROM notes WHERE title = ? OR id = ? LIMIT 1",
-            (target_title, slugify(target_title)),
+            """SELECT id FROM notes
+               WHERE LOWER(title) = LOWER(?) OR id = ? OR id = ? OR LOWER(id) = LOWER(?)
+               LIMIT 1""",
+            (target_title, target_title, target_slug, target_slug),
         ).fetchone()
         target_id = target_row["id"] if target_row else None
         conn.execute(
@@ -225,3 +232,29 @@ def _sync_links(conn: sqlite3.Connection, source_id: str,
                VALUES (?, ?, ?, ?, ?)""",
             (source_id, target_id, target_title, kind, 1.0),
         )
+
+
+def _resolve_all_links(conn: sqlite3.Connection) -> None:
+    """Resuelve links huérfanos conectándolos a notas existentes o creando nodos stub si no existen."""
+    # 1. Resolver links huérfanos hacia notas existentes por título/slug
+    unresolved = conn.execute("SELECT rowid, target_title FROM links WHERE target_id IS NULL").fetchall()
+    for r in unresolved:
+        ttitle = r["target_title"]
+        tslug = slugify(ttitle)
+        target_row = conn.execute(
+            """SELECT id FROM notes
+               WHERE LOWER(title) = LOWER(?) OR id = ? OR id = ? OR LOWER(id) = LOWER(?)
+               LIMIT 1""",
+            (ttitle, ttitle, tslug, tslug),
+        ).fetchone()
+        if target_row:
+            conn.execute("UPDATE links SET target_id = ? WHERE rowid = ?", (target_row["id"], r["rowid"]))
+        else:
+            # Crear un nodo stub automáticamente para conceptos mencionados en wikilinks
+            now = datetime.utcnow().isoformat() + "Z"
+            conn.execute(
+                """INSERT OR IGNORE INTO notes (id, title, content, source, created_at, updated_at)
+                   VALUES (?, ?, ?, 'stub', ?, ?)""",
+                (tslug, ttitle, f"Concepto [[{ttitle}]] mencionado en la red de conocimiento.", now, now),
+            )
+            conn.execute("UPDATE links SET target_id = ? WHERE rowid = ?", (tslug, r["rowid"]))

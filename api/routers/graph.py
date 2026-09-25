@@ -42,10 +42,12 @@ async def get_graph(
 
         # Tags por nodo
         nodes: list[GraphNode] = []
+        node_tags_map: dict[str, list[str]] = {}
         for row in node_rows:
             tags = [r["tag"] for r in conn.execute(
                 "SELECT tag FROM tags WHERE note_id = ?", (row["id"],)
             ).fetchall()]
+            node_tags_map[row["id"]] = tags
             nodes.append(GraphNode(
                 id=row["id"],
                 label=row["title"],
@@ -54,7 +56,7 @@ async def get_graph(
                 degree=row["degree"],
             ))
 
-        # Aristas: solo entre nodos presentes
+        # 1. Aristas explícitas de la tabla links
         edge_rows = conn.execute(
             """SELECT source_id, target_id, target_title, weight, kind
                FROM links
@@ -62,21 +64,53 @@ async def get_graph(
         ).fetchall()
 
         edges: list[GraphEdge] = []
+        existing_pairs: set[tuple[str, str]] = set()
+
         for row in edge_rows:
-            # Solo incluir aristas donde source está en el set filtrado
-            if row["source_id"] not in node_ids:
+            sid = row["source_id"]
+            tid = row["target_id"]
+            if sid not in node_ids:
                 continue
-            # Si target_id existe y está filtrado, incluir; sino omitir arista rota
-            if row["target_id"] and row["target_id"] not in node_ids:
-                continue
-            if not row["target_id"]:
-                continue  # skip unresolved wikilinks por ahora
-            edges.append(GraphEdge(
-                source=row["source_id"],
-                target=row["target_id"],
-                target_title=row["target_title"],
-                weight=row["weight"],
-                kind=row["kind"],
-            ))
+            if tid and tid in node_ids:
+                pair = tuple(sorted([sid, tid]))
+                if pair not in existing_pairs:
+                    existing_pairs.add(pair)
+                    edges.append(GraphEdge(
+                        source=sid,
+                        target=tid,
+                        target_title=row["target_title"],
+                        weight=row["weight"],
+                        kind=row["kind"],
+                    ))
+
+        # 2. Aristas semánticas implícitas entre nodos que comparten 1 o más tags
+        node_list = list(node_ids)
+        for i in range(len(node_list)):
+            for j in range(i + 1, len(node_list)):
+                id1, id2 = node_list[i], node_list[j]
+                pair = tuple(sorted([id1, id2]))
+                if pair in existing_pairs:
+                    continue
+                t1 = set(node_tags_map.get(id1, []))
+                t2 = set(node_tags_map.get(id2, []))
+                common = t1.intersection(t2)
+                if common:
+                    existing_pairs.add(pair)
+                    edges.append(GraphEdge(
+                        source=id1,
+                        target=id2,
+                        target_title="",
+                        weight=0.7,
+                        kind="semantic",
+                    ))
+
+        # Recalcular degree en respuesta
+        degree_count: dict[str, int] = {}
+        for e in edges:
+            degree_count[e.source] = degree_count.get(e.source, 0) + 1
+            degree_count[e.target] = degree_count.get(e.target, 0) + 1
+
+        for n in nodes:
+            n.degree = degree_count.get(n.id, n.degree)
 
         return GraphResponse(nodes=nodes, edges=edges)
