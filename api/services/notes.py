@@ -159,7 +159,7 @@ def delete_note(note_id: str) -> bool:
         return cursor.rowcount > 0
 
 
-def sync_vault_to_db() -> dict:
+def sync_vault_to_db(force: bool = False) -> dict:
     """Lee todos los .md del vault y los indexa en DB. Idempotente."""
     if not settings.vault_path.exists():
         return {"synced": 0, "skipped": 0, "errors": []}
@@ -173,7 +173,7 @@ def sync_vault_to_db() -> dict:
             with get_db() as conn:
                 row = conn.execute("SELECT id, updated_at FROM notes WHERE id = ?", (nid,)).fetchone()
                 file_mtime = datetime.fromtimestamp(md_path.stat().st_mtime).isoformat() + "Z"
-                if row and row["updated_at"] >= file_mtime:
+                if not force and row and row["updated_at"] >= file_mtime:
                     continue
                 now = datetime.utcnow().isoformat() + "Z"
                 conn.execute(
