@@ -77,22 +77,59 @@ const Graph = (() => {
     updateStatus();
     gRoot.selectAll('*').remove();
 
+    // SVG Defs para filtro de brillo neural (glow)
+    const defs = gRoot.append('defs');
+    const filter = defs.append('filter')
+      .attr('id', 'neural-glow')
+      .attr('x', '-50%')
+      .attr('y', '-50%')
+      .attr('width', '200%')
+      .attr('height', '200%');
+    filter.append('feGaussianBlur')
+      .attr('stdDeviation', '3')
+      .attr('result', 'coloredBlur');
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+    // 1. Enlaces (Líneas de conexión sináptica)
     const linkSel = gRoot.append('g')
       .attr('class', 'links')
       .selectAll('line')
       .data(linksData)
       .join('line')
       .attr('class', d => `link ${d.kind}`)
-      .attr('stroke-width', d => Math.max(0.5, Math.sqrt(d.weight || 1) * 0.8))
-      .attr('stroke-opacity', 0.4);
+      .attr('stroke-width', d => Math.max(1.2, Math.sqrt(d.weight || 1) * 1.5))
+      .attr('stroke-opacity', 0.5);
 
-    // Posicion inicial: distribuir en grilla centrada
+    // 2. Partículas de impulso sináptico (impulsos eléctricos viajando entre nodos)
+    const particlesData = [];
+    linksData.forEach((link, idx) => {
+      // 1 o 2 impulsos por conexión
+      particlesData.push({
+        id: `p-${idx}-1`,
+        link: link,
+        progress: Math.random(),
+        speed: 0.003 + Math.random() * 0.006
+      });
+    });
+
+    const particleSel = gRoot.append('g')
+      .attr('class', 'synapses')
+      .selectAll('circle')
+      .data(particlesData)
+      .join('circle')
+      .attr('class', 'synapse-particle')
+      .attr('r', 2.5)
+      .attr('fill', '#00f3ff')
+      .attr('filter', 'url(#neural-glow)');
+
+    // Posicion inicial: distribuir orgánicamente
     const n = nodesData.length;
     const cols = Math.ceil(Math.sqrt(n));
     const rows = Math.ceil(n / cols);
-    // Usar 60% del width/height disponible para la grilla
-    const cellW = Math.min((width * 0.6) / cols, 110);
-    const cellH = Math.min((height * 0.6) / rows, 85);
+    const cellW = Math.min((width * 0.7) / cols, 130);
+    const cellH = Math.min((height * 0.7) / rows, 100);
     const gridW = cols * cellW;
     const gridH = rows * cellH;
     const startX = (width - gridW) / 2 + cellW / 2;
@@ -100,12 +137,13 @@ const Graph = (() => {
     nodesData.forEach((nd, i) => {
       const c = i % cols;
       const r = Math.floor(i / cols);
-      nd.x = startX + c * cellW + (Math.random() - 0.5) * cellW * 0.4;
-      nd.y = startY + r * cellH + (Math.random() - 0.5) * cellH * 0.4;
+      nd.x = startX + c * cellW + (Math.random() - 0.5) * cellW * 0.5;
+      nd.y = startY + r * cellH + (Math.random() - 0.5) * cellH * 0.5;
       nd.vx = 0;
       nd.vy = 0;
     });
 
+    // 3. Nodos estilo soma neuronal
     const nodeGroup = gRoot.append('g')
       .attr('class', 'nodes')
       .selectAll('g')
@@ -120,7 +158,6 @@ const Graph = (() => {
       })
       .on('dblclick', (event, d) => {
         event.stopPropagation();
-        // Doble click libera el nodo pinned
         d.fx = null;
         d.fy = null;
         d3.select(event.currentTarget).classed('pinned', false);
@@ -129,40 +166,66 @@ const Graph = (() => {
       .on('mouseenter', (event, d) => highlightConnections(d))
       .on('mouseleave', () => clearHighlight());
 
+    // Halo palpitante exterior del nodo
     nodeGroup.append('circle')
-      .attr('r', d => 4 + Math.sqrt(d.degree || 0) * 2.5)
-      .attr('stroke-width', 1.2);
+      .attr('class', 'node-halo')
+      .attr('r', d => 8 + Math.sqrt(d.degree || 0) * 3.5)
+      .attr('fill', 'currentColor')
+      .attr('opacity', 0.15);
+
+    // Núcleo del nodo con brillo neural
+    nodeGroup.append('circle')
+      .attr('class', 'node-core')
+      .attr('r', d => 5 + Math.sqrt(d.degree || 0) * 2.5)
+      .attr('stroke-width', 1.5)
+      .attr('filter', 'url(#neural-glow)');
 
     nodeGroup.append('text')
       .attr('class', 'node-label')
-      .attr('x', d => 4 + Math.sqrt(d.degree || 0) * 2.5 + 3)
+      .attr('x', d => 6 + Math.sqrt(d.degree || 0) * 2.5 + 4)
       .attr('y', 3)
       .text(d => truncate(d.label, 30));
 
-    // Force simulation
+    // Force simulation — Física viva orgánica con deriva constante (respiración neural)
     simulation = d3.forceSimulation(nodesData)
       .force('link', d3.forceLink(linksData)
         .id(d => d.id)
-        .distance(40)
-        .strength(0.3)
+        .distance(85)
+        .strength(0.4)
       )
       .force('charge', d3.forceManyBody()
-        .strength(-80)       // menos repulsión = respeta mas la grilla inicial
-        .distanceMax(200)
+        .strength(-140)
+        .distanceMax(350)
       )
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collide', d3.forceCollide()
-        .radius(d => 10 + Math.sqrt(d.degree || 0) * 2.5)
+        .radius(d => 16 + Math.sqrt(d.degree || 0) * 3)
         .iterations(3)
       )
-      .alpha(0.7)            // empezar con menos energia
-      .alphaDecay(0.03)      // converger mas rapido
+      .alpha(0.8)
+      .alphaDecay(0.015)       // Enfriamiento suave
+      .alphaTarget(0.03)       // Mantiene una pequeña energía de flotación constante (vida/deriva)
       .on('tick', () => {
+        // Actualizar posiciones de enlaces
         linkSel
           .attr('x1', d => d.source.x)
           .attr('y1', d => d.source.y)
           .attr('x2', d => d.target.x)
           .attr('y2', d => d.target.y);
+
+        // Actualizar impulsos sinápticos viajando por las conexiones
+        particleSel.each(function(p) {
+          p.progress = (p.progress + p.speed) % 1;
+          const sx = p.link.source.x, sy = p.link.source.y;
+          const tx = p.link.target.x, ty = p.link.target.y;
+          if (sx != null && tx != null) {
+            d3.select(this)
+              .attr('cx', sx + (tx - sx) * p.progress)
+              .attr('cy', sy + (ty - sy) * p.progress);
+          }
+        });
+
+        // Actualizar nodos
         nodeGroup.attr('transform', d => `translate(${d.x},${d.y})`);
       });
 

@@ -2,46 +2,68 @@
 
 .node {
   cursor: pointer;
-  transition: stroke-width 0.15s, stroke 0.15s;
+  transition: opacity 0.2s ease;
 }
 
-/* Colores por source usando CSS variables */
-.node circle {
+/* Halos y núcleos de nodos estilo neuronal */
+.node .node-halo {
+  animation: neural-pulse 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.node .node-core {
   stroke-width: 1.5;
   transition: r 0.2s, fill 0.15s, stroke 0.15s, stroke-width 0.15s;
 }
 
-.node.source-teclera circle  { fill: var(--c-teclera);  stroke: var(--c-teclera-dim); }
-.node.source-geojobs circle  { fill: var(--c-geojobs);  stroke: var(--c-geojobs-dim); }
-.node.source-totem circle    { fill: var(--c-totem);    stroke: var(--c-totem-dim); }
-.node.source-emerald circle  { fill: var(--c-emerald);  stroke: var(--c-emerald-dim); }
-.node.source-vault circle    { fill: var(--c-vault);    stroke: var(--c-vault-dim); }
-.node.source-manual circle   { fill: var(--c-manual);   stroke: var(--c-manual-dim); }
-.node.source-telegram circle { fill: var(--c-telegram); stroke: var(--c-telegram-dim); }
-.node.source-pdf circle      { fill: var(--c-pdf);      stroke: var(--c-pdf-dim); }
-.node.source-session circle  { fill: var(--c-session);  stroke: var(--c-session-dim); }
-.node.source-email circle    { fill: var(--c-email);    stroke: var(--c-email-dim); }
-.node.source-stub circle     { fill: var(--c-stub);     stroke: var(--c-stub-dim); }
+@keyframes neural-pulse {
+  0% { transform: scale(1); opacity: 0.15; }
+  50% { transform: scale(1.35); opacity: 0.35; }
+  100% { transform: scale(1); opacity: 0.15; }
+}
+
+/* Colores por source usando CSS variables */
+.node.source-teclera circle  { fill: var(--c-teclera);  stroke: var(--c-teclera-dim); color: var(--c-teclera); }
+.node.source-geojobs circle  { fill: var(--c-geojobs);  stroke: var(--c-geojobs-dim); color: var(--c-geojobs); }
+.node.source-totem circle    { fill: var(--c-totem);    stroke: var(--c-totem-dim); color: var(--c-totem); }
+.node.source-emerald circle  { fill: var(--c-emerald);  stroke: var(--c-emerald-dim); color: var(--c-emerald); }
+.node.source-vault circle    { fill: var(--c-vault);    stroke: var(--c-vault-dim); color: var(--c-vault); }
+.node.source-manual circle   { fill: var(--c-manual);   stroke: var(--c-manual-dim); color: var(--c-manual); }
+.node.source-telegram circle { fill: var(--c-telegram); stroke: var(--c-telegram-dim); color: var(--c-telegram); }
+.node.source-pdf circle      { fill: var(--c-pdf);      stroke: var(--c-pdf-dim); color: var(--c-pdf); }
+.node.source-session circle  { fill: var(--c-session);  stroke: var(--c-session-dim); color: var(--c-session); }
+.node.source-email circle    { fill: var(--c-email);    stroke: var(--c-email-dim); color: var(--c-email); }
+.node.source-stub circle     { fill: var(--c-stub);     stroke: var(--c-stub-dim); color: var(--c-stub); }
 /* Agent sources (agent:master, agent:hermes, etc.) */
-.node[class*="source-agent"] circle { fill: var(--c-agent); stroke: var(--c-agent-dim); }
+.node[class*="source-agent"] circle { fill: var(--c-agent); stroke: var(--c-agent-dim); color: var(--c-agent); }
 /* Fallback */
-.node circle                 { fill: var(--c-default);  stroke: var(--c-default-dim); }
+.node circle                 { fill: var(--c-default);  stroke: var(--c-default-dim); color: var(--c-default); }
 
-.node:hover circle {
-  stroke: var(--fg);
-  stroke-width: 2.5;
+.node:hover .node-core {
+  stroke: #ffffff;
+  stroke-width: 2.8;
+  filter: drop-shadow(0 0 10px var(--accent-bright));
 }
 
-.node.selected circle {
-  stroke: var(--fg);
-  stroke-width: 3;
-  filter: drop-shadow(0 0 8px var(--accent));
+.node.selected .node-core {
+  stroke: #ffffff;
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 12px var(--accent-bright));
 }
 
-.node.pinned circle {
+.node.pinned .node-core {
   stroke: var(--accent-bright);
-  stroke-width: 2.5;
+  stroke-width: 3;
 }
+
+/* Partículas de impulso sináptico */
+.synapse-particle {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.node.dim .node-halo { opacity: 0; }
+.synapses.dim { opacity: 0.1; }
 
 .node-label {
   fill: var(--label-fill);
