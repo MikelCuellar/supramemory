@@ -2,6 +2,11 @@
 import os
 import urllib.request
 import json
+import ssl
+
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
 
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 API_KEY = os.getenv("API_KEY", "WmGIqEjseUTEimA3k93cGjk3jw5v5PYp")
@@ -202,7 +207,7 @@ for n in notes:
         method="POST"
     )
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, context=ctx) as resp:
             print(f"  [OK {resp.status}] {n['title']}")
     except Exception as e:
         print(f"  [ERR] {n['title']}: {e}")
