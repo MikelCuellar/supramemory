@@ -80,7 +80,7 @@ from scripts.hermes_client import HermesSupramemory
 # 1. Inicializar cliente con token de agente
 hermes = HermesSupramemory(
     api_url="https://supramemory.grupogeo.cl",
-    token="sk-kR9wxj_H8aqyW5KB2_ogJJHCR5CsaknmafMZNvNczvY"
+    token="GENERA TU TOKEN"
 )
 
 # 2. Guardar un aprendizaje en la memoria viva
