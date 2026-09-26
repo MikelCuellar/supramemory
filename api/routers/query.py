@@ -24,3 +24,14 @@ async def context(
 ):
     """Endpoint estrella para agentes IA: contexto relevante con snippets."""
     return ContextResponse(**search_svc.get_context(q, limit=limit))
+
+
+@router.post("/query/execute")
+async def execute_query(
+    payload: dict,
+):
+    """Ejecuta una consulta SQL de solo lectura segura (estilo Dataview)."""
+    from api.services.query_engine import execute_safe_query
+    q = payload.get("query", "")
+    limit = payload.get("limit", 50)
+    return execute_safe_query(q, limit=limit)

@@ -61,7 +61,7 @@ def create_note(title: str, content: str, source: str = "manual",
 
     if write_to_vault and settings.vault_path.exists():
         md_path = settings.vault_path / f"{nid}.md"
-        md_path.write_text(note_to_markdown(title, content, tags, links))
+        md_path.write_text(note_to_markdown(title, content, tags, links), encoding="utf-8")
         with get_db() as conn:
             conn.execute("UPDATE notes SET path = ? WHERE id = ?", (str(md_path), nid))
 

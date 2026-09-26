@@ -52,11 +52,43 @@ const API = (() => {
     createNote: (data) => req('/notes', { method: 'POST', body: JSON.stringify(data) }),
     updateNote: (id, data) => req(`/notes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteNote: (id) => req(`/notes/${id}`, { method: 'DELETE' }),
+    getTree: () => req('/notes/tree'),
+    renameNote: (noteId, newTitle, newPath = null) =>
+      req(`/notes/rename?note_id=${encodeURIComponent(noteId)}`, {
+        method: 'POST',
+        body: JSON.stringify({ new_title: newTitle, new_path: newPath }),
+      }),
+    getUnlinkedMentions: (noteId) => req(`/notes/${encodeURIComponent(noteId)}/unlinked-mentions`),
+    linkMention: (targetId, sourceId, targetTitle) =>
+      req(`/notes/${encodeURIComponent(targetId)}/link-mention`, {
+        method: 'POST',
+        body: JSON.stringify({ source_id: sourceId, target_title: targetTitle }),
+      }),
+    getDailyNote: () => req('/notes/daily', { method: 'POST' }),
+    createFolder: (path) => req('/notes/folders', { method: 'POST', body: JSON.stringify({ path }) }),
+    moveNote: (noteId, targetFolder) =>
+      req('/notes/move', { method: 'POST', body: JSON.stringify({ note_id: noteId, target_folder: targetFolder }) }),
+    uploadAttachment: async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const k = getKey();
+      const headers = k ? { 'Authorization': `Bearer ${k}` } : {};
+      const res = await fetch('/notes/attachments', {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
+      return res.json();
+    },
     graph: (params = {}) => {
       const qs = new URLSearchParams(params).toString();
       return req(`/graph${qs ? '?' + qs : ''}`);
     },
+    localGraph: (id, depth = 1) => req(`/graph/local/${encodeURIComponent(id)}?depth=${depth}`),
     query: (q, limit = 10) => req(`/query?q=${encodeURIComponent(q)}&limit=${limit}`),
+    executeDynamicQuery: (query, limit = 50) =>
+      req('/query/execute', { method: 'POST', body: JSON.stringify({ query, limit }) }),
     context: (q, limit = 5) => req(`/context?q=${encodeURIComponent(q)}&limit=${limit}`),
     ingest: () => req('/ingest/vault', { method: 'POST' }),
   };

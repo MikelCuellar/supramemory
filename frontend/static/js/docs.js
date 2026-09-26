@@ -27,6 +27,20 @@ function loadDocs() {
 <pre><code>curl -H "Authorization: Bearer sk-TU_TOKEN" \\
      "https://supramemory.grupogeo.cl/context?q=m2m+zendesk+api+keys&limit=3"</code></pre>
 
+<h2 id="obsidian">Capacidades Obsidian</h2>
+<p>Supramemory integra las principales funcionalidades de <strong>Obsidian</strong>:</p>
+<ul>
+  <li>📝 <strong>Editor Live Preview & Split View:</strong> Editor interactivo con doble panel y auto-guardado en tiempo real.</li>
+  <li>🔍 <strong>Autocompletado Omni-Suggest:</strong> Escribí <code>[[</code> para autocompletar o crear notas, o <code>#</code> para autocompletar tags.</li>
+  <li>📁 <strong>Explorador de Carpetas (File Tree):</strong> Organización jerárquica con subcarpetas en tu vault en disco.</li>
+  <li>🔗 <strong>Safe Rename:</strong> Al renombrar una nota, el sistema actualiza automáticamente todos los wikilinks en el vault.</li>
+  <li>💡 <strong>Menciones No Enlazadas:</strong> Detección de menciones de texto plano con botón de 1-click para convertir en wikilink.</li>
+  <li>🕸️ <strong>Grafo Local:</strong> Subgrafo centrado en la nota activa con profundidad configurable (1 a 5 saltos) y control de físicas.</li>
+  <li>📅 <strong>Notas Diarias (Daily Notes):</strong> Creación y apertura instantánea de la nota de hoy basada en plantillas.</li>
+  <li>📎 <strong>Adjuntos e Imágenes:</strong> Pegar con <code>Ctrl+V</code> o arrastrar archivos para guardarlos en <code>/vault/attachments/</code>.</li>
+  <li>⚡ <strong>Dataview / Consultas Dinámicas:</strong> Bloques <code>```query SELECT ... ```</code> embebidos que renderizan tablas en vivo.</li>
+</ul>
+
 <h2 id="auth">Autenticación</h2>
 <p>Todos los endpoints (excepto <code>/health</code>, <code>/docs</code>, <code>/openapi.json</code>) requieren:</p>
 <pre><code>Authorization: Bearer &lt;tu-token&gt;</code></pre>

@@ -1,10 +1,23 @@
-// Motor del grafo — D3 force-directed, simple y robusto
+// Motor del grafo — D3 force-directed con soporte para Grafo Global, Grafo Local y Controles de Física en Vivo
 const Graph = (() => {
   let svg, gRoot, simulation, zoomBehavior;
   let nodesData = [], linksData = [];
   let selectedNode = null;
   let onSelectCallback = null;
   let width = 800, height = 600;
+
+  // Estado y configuraciones de simulación
+  let graphMode = "global"; // "global" | "local"
+  let localRootId = null;
+  let localDepth = 1;
+
+  let physicsConfig = {
+    charge: -140,
+    distance: 85,
+    strength: 0.4,
+    showOrphans: true,
+    showLabels: true,
+  };
 
   function measure() {
     if (!svg) return;
@@ -19,7 +32,6 @@ const Graph = (() => {
     gRoot = svg.select('#graph-root');
     measure();
 
-    // Zoom simple: captura wheel del SVG completo
     zoomBehavior = d3.zoom()
       .scaleExtent([0.1, 6])
       .on('zoom', (event) => {
@@ -27,43 +39,51 @@ const Graph = (() => {
       });
     svg.call(zoomBehavior);
 
-    // Click en el fondo deselecciona
     svg.on('click', (event) => {
       if (!event.target.closest('.node')) {
         deselect();
       }
     });
 
-    // Resize: recentrar
     let rt = null;
     window.addEventListener('resize', () => {
       if (rt) clearTimeout(rt);
       rt = setTimeout(() => {
-        const oldW = width, oldH = height;
         measure();
-        if (Math.abs(oldW - width) > 1 || Math.abs(oldH - height) > 1) {
-          if (simulation) {
-            simulation.force('center', d3.forceCenter(width / 2, height / 2));
-            simulation.alpha(0.3).restart();
-          }
+        if (simulation) {
+          simulation.force('center', d3.forceCenter(width / 2, height / 2));
+          simulation.alpha(0.3).restart();
         }
       }, 250);
     });
+
+    setupGraphControlsUI();
   }
 
   function render(graphData) {
-    // Re-medir después de un frame, para asegurar que el CSS ya aplicó
-    // y el container tiene dimensiones reales.
     requestAnimationFrame(() => {
       measure();
       doRender(graphData);
     });
   }
 
+  async function loadLocalGraph(rootNodeId, depth = 1) {
+    graphMode = "local";
+    localRootId = rootNodeId;
+    localDepth = depth;
+    updateModeIndicator();
+
+    try {
+      const data = await API.localGraph(rootNodeId, depth);
+      render(data);
+      setSelectedStatus(`Grafo Local: ${rootNodeId} (profundidad ${depth})`);
+    } catch (e) {
+      console.error("Error loading local graph:", e);
+    }
+  }
+
   function doRender(graphData) {
-    // safety check: si el SVG aun no tiene tamaño, reintentar en el siguiente frame
     if (width < 100 || height < 100) {
-      console.warn('SVG size too small, retrying:', width, height);
       requestAnimationFrame(() => {
         measure();
         doRender(graphData);
@@ -71,13 +91,22 @@ const Graph = (() => {
       return;
     }
 
-    nodesData = graphData.nodes.map(n => ({ ...n }));
-    linksData = graphData.edges.map(e => ({ ...e }));
+    let rawNodes = graphData.nodes || [];
+    let rawEdges = graphData.edges || [];
+
+    if (!physicsConfig.showOrphans) {
+      rawNodes = rawNodes.filter(n => n.degree > 0);
+      const activeIds = new Set(rawNodes.map(n => n.id));
+      rawEdges = rawEdges.filter(e => activeIds.has(e.source) && activeIds.has(e.target));
+    }
+
+    nodesData = rawNodes.map(n => ({ ...n }));
+    linksData = rawEdges.map(e => ({ ...e }));
 
     updateStatus();
     gRoot.selectAll('*').remove();
 
-    // SVG Defs para filtro de brillo neural (glow)
+    // Defs de brillo neural
     const defs = gRoot.append('defs');
     const filter = defs.append('filter')
       .attr('id', 'neural-glow')
@@ -92,7 +121,7 @@ const Graph = (() => {
     feMerge.append('feMergeNode').attr('in', 'coloredBlur');
     feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-    // 1. Enlaces (Líneas de conexión sináptica)
+    // 1. Aristas
     const linkSel = gRoot.append('g')
       .attr('class', 'links')
       .selectAll('line')
@@ -102,15 +131,14 @@ const Graph = (() => {
       .attr('stroke-width', d => Math.max(1.2, Math.sqrt(d.weight || 1) * 1.5))
       .attr('stroke-opacity', 0.5);
 
-    // 2. Partículas de impulso sináptico (impulsos eléctricos viajando entre nodos)
+    // 2. Impulsos Sinápticos
     const particlesData = [];
     linksData.forEach((link, idx) => {
-      // 1 o 2 impulsos por conexión
       particlesData.push({
-        id: `p-${idx}-1`,
+        id: `p-${idx}`,
         link: link,
         progress: Math.random(),
-        speed: 0.003 + Math.random() * 0.006
+        speed: 0.003 + Math.random() * 0.005
       });
     });
 
@@ -124,10 +152,10 @@ const Graph = (() => {
       .attr('fill', '#00f3ff')
       .attr('filter', 'url(#neural-glow)');
 
-    // Posicion inicial: distribuir orgánicamente
+    // Posición inicial orgánica
     const n = nodesData.length;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
+    const cols = Math.ceil(Math.sqrt(n)) || 1;
+    const rows = Math.ceil(n / cols) || 1;
     const cellW = Math.min((width * 0.7) / cols, 130);
     const cellH = Math.min((height * 0.7) / rows, 100);
     const gridW = cols * cellW;
@@ -143,13 +171,13 @@ const Graph = (() => {
       nd.vy = 0;
     });
 
-    // 3. Nodos estilo soma neuronal
+    // 3. Nodos
     const nodeGroup = gRoot.append('g')
       .attr('class', 'nodes')
       .selectAll('g')
       .data(nodesData, d => d.id)
       .join('g')
-      .attr('class', d => `node source-${d.source}`)
+      .attr('class', d => `node source-${d.source} ${d.id === localRootId ? 'local-root' : ''}`)
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .call(makeDrag())
       .on('click', (event, d) => {
@@ -166,100 +194,78 @@ const Graph = (() => {
       .on('mouseenter', (event, d) => highlightConnections(d))
       .on('mouseleave', () => clearHighlight());
 
-    // Halo palpitante exterior del nodo
+    // Halos
     nodeGroup.append('circle')
       .attr('class', 'node-halo')
-      .attr('r', d => 8 + Math.sqrt(d.degree || 0) * 3.5)
+      .attr('r', d => (d.id === localRootId ? 14 : 8) + Math.sqrt(d.degree || 0) * 3.5)
       .attr('fill', 'currentColor')
-      .attr('opacity', 0.15);
+      .attr('opacity', d => (d.id === localRootId ? 0.35 : 0.15));
 
-    // Núcleo del nodo con brillo neural
+    // Núcleos
     nodeGroup.append('circle')
       .attr('class', 'node-core')
-      .attr('r', d => 5 + Math.sqrt(d.degree || 0) * 2.5)
-      .attr('stroke-width', 1.5)
+      .attr('r', d => (d.id === localRootId ? 9 : 5) + Math.sqrt(d.degree || 0) * 2.5)
+      .attr('stroke-width', d => (d.id === localRootId ? 2.5 : 1.5))
       .attr('filter', 'url(#neural-glow)');
 
+    // Text labels
     nodeGroup.append('text')
       .attr('class', 'node-label')
       .attr('x', d => 6 + Math.sqrt(d.degree || 0) * 2.5 + 4)
       .attr('y', 3)
+      .attr('opacity', physicsConfig.showLabels ? 1 : 0)
       .text(d => truncate(d.label, 30));
 
-    // Force simulation — Física viva orgánica con deriva constante (respiración neural)
+    // Force simulation
     simulation = d3.forceSimulation(nodesData)
       .force('link', d3.forceLink(linksData)
         .id(d => d.id)
-        .distance(85)
-        .strength(0.4)
+        .distance(physicsConfig.distance)
+        .strength(physicsConfig.strength)
       )
       .force('charge', d3.forceManyBody()
-        .strength(-140)
-        .distanceMax(350)
+        .strength(physicsConfig.charge)
+        .distanceMax(400)
       )
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collide', d3.forceCollide()
-        .radius(d => 16 + Math.sqrt(d.degree || 0) * 3)
-        .iterations(3)
-      )
-      .alpha(0.8)
-      .alphaDecay(0.015)       // Enfriamiento suave
-      .alphaTarget(0.03)       // Mantiene una pequeña energía de flotación constante (vida/deriva)
+      .force('collision', d3.forceCollide().radius(d => 16 + Math.sqrt(d.degree || 0) * 3))
+      .alphaDecay(0.02)
       .on('tick', () => {
-        // Actualizar posiciones de enlaces
         linkSel
           .attr('x1', d => d.source.x)
           .attr('y1', d => d.source.y)
           .attr('x2', d => d.target.x)
           .attr('y2', d => d.target.y);
 
-        // Actualizar impulsos sinápticos viajando por las conexiones
-        particleSel.each(function(p) {
-          p.progress = (p.progress + p.speed) % 1;
-          const sx = p.link.source.x, sy = p.link.source.y;
-          const tx = p.link.target.x, ty = p.link.target.y;
-          if (sx != null && tx != null) {
-            d3.select(this)
-              .attr('cx', sx + (tx - sx) * p.progress)
-              .attr('cy', sy + (ty - sy) * p.progress);
-          }
-        });
+        particleSel
+          .attr('cx', d => {
+            d.progress += d.speed;
+            if (d.progress > 1) d.progress = 0;
+            const sx = d.link.source.x || 0, tx = d.link.target.x || 0;
+            return sx + (tx - sx) * d.progress;
+          })
+          .attr('cy', d => {
+            const sy = d.link.source.y || 0, ty = d.link.target.y || 0;
+            return sy + (ty - sy) * d.progress;
+          });
 
-        // Actualizar nodos
         nodeGroup.attr('transform', d => `translate(${d.x},${d.y})`);
       });
-
-    Graph._simulation = simulation;
-
-    // No aplicar zoom reset agresivo. Solo un heat final.
-    setTimeout(() => {
-      if (simulation) simulation.alpha(0.3).restart();
-    }, 1500);
-  }
-
-  function truncate(s, n) {
-    return s.length > n ? s.slice(0, n - 1) + '…' : s;
   }
 
   function makeDrag() {
     function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
+      if (!event.active && simulation) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;
       d.fy = d.y;
-      d3.select(this).classed('pinned', true);
-      // evitar que el evento se propague al zoom handler del SVG
-      event.sourceEvent.stopPropagation();
     }
     function dragged(event, d) {
-      // event.x/event.y ya vienen en coordenadas locales del SVG
-      // (D3 v7 aplica el transform del zoom automaticamente)
       d.fx = event.x;
       d.fy = event.y;
     }
     function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0);
-      // El nodo queda pinned donde el usuario lo soltó.
-      // Doble-click lo libera.
+      if (!event.active && simulation) simulation.alphaTarget(0);
+      d3.select(this).classed('pinned', true);
     }
     return d3.drag()
       .on('start', dragstarted)
@@ -267,82 +273,219 @@ const Graph = (() => {
       .on('end', dragended);
   }
 
-  function selectNode(d) {
-    selectedNode = d;
-    gRoot.selectAll('.node').classed('selected', n => n.id === d.id);
-    if (onSelectCallback) onSelectCallback(d);
+  function selectNode(node) {
+    selectedNode = node;
+    d3.selectAll('.node').classed('selected', d => d.id === node.id);
+    if (onSelectCallback) onSelectCallback(node);
   }
 
   function deselect() {
     selectedNode = null;
-    gRoot.selectAll('.node').classed('selected', false);
+    d3.selectAll('.node').classed('selected', false);
     if (onSelectCallback) onSelectCallback(null);
   }
 
-  function highlightConnections(d) {
-    const connectedIds = new Set([d.id]);
+  function highlightConnections(node) {
+    const connected = new Set([node.id]);
     linksData.forEach(l => {
-      if (l.source.id === d.id) connectedIds.add(l.target.id);
-      if (l.target.id === d.id) connectedIds.add(l.source.id);
+      const s = l.source.id || l.source;
+      const t = l.target.id || l.target;
+      if (s === node.id) connected.add(t);
+      if (t === node.id) connected.add(s);
     });
-    gRoot.selectAll('.node').classed('dim', n => !connectedIds.has(n.id));
-    gRoot.selectAll('.link').classed('dim', l =>
-      l.source.id !== d.id && l.target.id !== d.id
-    );
+
+    d3.selectAll('.node').classed('dimmed', d => !connected.has(d.id));
+    d3.selectAll('.link').classed('dimmed', d => {
+      const s = d.source.id || d.source;
+      const t = d.target.id || d.target;
+      return s !== node.id && t !== node.id;
+    });
   }
 
   function clearHighlight() {
-    gRoot.selectAll('.node').classed('dim', false);
-    gRoot.selectAll('.link').classed('dim', false);
+    d3.selectAll('.node').classed('dimmed', false);
+    d3.selectAll('.link').classed('dimmed', false);
   }
 
-  function updateStatus() {
-    document.getElementById('status-count').textContent =
-      `${nodesData.length} nodos · ${linksData.length} conexiones`;
-  }
+  function highlightByText(text) {
+    if (!text) {
+      clearHighlight();
+      return;
+    }
+    const q = text.toLowerCase();
+    let firstMatch = null;
+    d3.selectAll('.node').each(function(d) {
+      const match = d.label.toLowerCase().includes(q) ||
+        d.id.toLowerCase().includes(q) ||
+        (d.tags && d.tags.some(t => t.toLowerCase().includes(q)));
+      d3.select(this).classed('dimmed', !match);
+      if (match && !firstMatch) firstMatch = d;
+    });
 
-  function setSelectedStatus(text) {
-    document.getElementById('status-selected').textContent = text;
-  }
-
-  function highlightByText(query) {
-    gRoot.selectAll('.node').classed('highlight', false);
-    if (!query) return;
-    const q = query.toLowerCase();
-    const matches = nodesData.filter(n =>
-      (n.label || '').toLowerCase().includes(q) ||
-      (n.tags || []).some(t => t.toLowerCase().includes(q))
-    );
-    if (matches.length === 0) return;
-    gRoot.selectAll('.node').classed('highlight', n =>
-      matches.some(m => m.id === n.id)
-    );
-    if (matches[0]) {
-      const m = matches[0];
-      const transform = d3.zoomIdentity
-        .translate(width / 2 - m.x, height / 2 - m.y)
-        .scale(1.5);
-      svg.transition().duration(500).call(zoomBehavior.transform, transform);
+    if (firstMatch) {
+      centerOn(firstMatch);
     }
   }
 
-  function reheat(alpha = 0.3) {
-    if (simulation) simulation.alpha(alpha).restart();
+  function centerOn(node) {
+    if (!zoomBehavior || !svg || node.x == null) return;
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(1.3)
+      .translate(-node.x, -node.y);
+    svg.transition().duration(500).call(zoomBehavior.transform, transform);
   }
 
   function zoomBy(factor) {
-    if (!zoomBehavior) return;
-    svg.transition().duration(250).call(zoomBehavior.scaleBy, factor);
+    if (zoomBehavior && svg) svg.transition().duration(300).call(zoomBehavior.scaleBy, factor);
   }
 
   function zoomReset() {
-    if (!zoomBehavior) return;
-    svg.transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity);
+    if (zoomBehavior && svg) {
+      svg.transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity);
+    }
+  }
+
+  function setupGraphControlsUI() {
+    const graphContainer = document.getElementById('graph-container');
+    if (!graphContainer) return;
+
+    // Panel de control de físicas flotante estilo Obsidian
+    const ctrlPanel = document.createElement('div');
+    ctrlPanel.id = 'graph-physics-panel';
+    ctrlPanel.className = 'graph-physics-panel collapsed';
+    ctrlPanel.innerHTML = `
+      <button id="toggle-physics-btn" class="physics-toggle-btn" title="Ajustes de Grafo y Físicas">⚙️</button>
+      <div class="physics-content">
+        <h4>Ajustes de Grafo</h4>
+        <div class="physics-row">
+          <label>Modo:</label>
+          <div class="btn-group">
+            <button id="btn-mode-global" class="btn-mini active">Global</button>
+            <button id="btn-mode-local" class="btn-mini">Local</button>
+          </div>
+        </div>
+        <div id="local-depth-row" class="physics-row hidden">
+          <label>Profundidad:</label>
+          <input type="range" id="slider-depth" min="1" max="4" value="1" />
+          <span id="val-depth">1 salto</span>
+        </div>
+        <div class="physics-row">
+          <label>Repulsión:</label>
+          <input type="range" id="slider-charge" min="-400" max="-30" value="-140" />
+        </div>
+        <div class="physics-row">
+          <label>Distancia:</label>
+          <input type="range" id="slider-dist" min="30" max="250" value="85" />
+        </div>
+        <div class="physics-row checkbox">
+          <label><input type="checkbox" id="chk-orphans" checked /> Mostrar huérfanos</label>
+        </div>
+        <div class="physics-row checkbox">
+          <label><input type="checkbox" id="chk-labels" checked /> Mostrar etiquetas</label>
+        </div>
+      </div>
+    `;
+    graphContainer.appendChild(ctrlPanel);
+
+    // Eventos
+    document.getElementById('toggle-physics-btn')?.addEventListener('click', () => {
+      ctrlPanel.classList.toggle('collapsed');
+    });
+
+    document.getElementById('btn-mode-global')?.addEventListener('click', () => {
+      graphMode = "global";
+      document.getElementById('btn-mode-global').classList.add('active');
+      document.getElementById('btn-mode-local').classList.remove('active');
+      document.getElementById('local-depth-row').classList.add('hidden');
+      window.appLoadGraph?.();
+    });
+
+    document.getElementById('btn-mode-local')?.addEventListener('click', () => {
+      if (selectedNode) {
+        loadLocalGraph(selectedNode.id, localDepth);
+      } else {
+        alert("Selecciona primero una nota para ver su grafo local.");
+      }
+    });
+
+    document.getElementById('slider-depth')?.addEventListener('input', (e) => {
+      const depth = parseInt(e.target.value, 10);
+      document.getElementById('val-depth').textContent = `${depth} salto${depth > 1 ? 's' : ''}`;
+      if (localRootId) loadLocalGraph(localRootId, depth);
+    });
+
+    document.getElementById('slider-charge')?.addEventListener('input', (e) => {
+      physicsConfig.charge = parseInt(e.target.value, 10);
+      if (simulation) {
+        simulation.force('charge', d3.forceManyBody().strength(physicsConfig.charge).distanceMax(400));
+        simulation.alpha(0.3).restart();
+      }
+    });
+
+    document.getElementById('slider-dist')?.addEventListener('input', (e) => {
+      physicsConfig.distance = parseInt(e.target.value, 10);
+      if (simulation) {
+        simulation.force('link', d3.forceLink(linksData).id(d => d.id).distance(physicsConfig.distance));
+        simulation.alpha(0.3).restart();
+      }
+    });
+
+    document.getElementById('chk-orphans')?.addEventListener('change', (e) => {
+      physicsConfig.showOrphans = e.target.checked;
+      if (graphMode === 'local' && localRootId) {
+        loadLocalGraph(localRootId, localDepth);
+      } else {
+        window.appLoadGraph?.();
+      }
+    });
+
+    document.getElementById('chk-labels')?.addEventListener('change', (e) => {
+      physicsConfig.showLabels = e.target.checked;
+      d3.selectAll('.node-label').attr('opacity', e.target.checked ? 1 : 0);
+    });
+  }
+
+  function updateModeIndicator() {
+    const btnGlobal = document.getElementById('btn-mode-global');
+    const btnLocal = document.getElementById('btn-mode-local');
+    const depthRow = document.getElementById('local-depth-row');
+    if (btnGlobal && btnLocal) {
+      btnGlobal.classList.toggle('active', graphMode === 'global');
+      btnLocal.classList.toggle('active', graphMode === 'local');
+    }
+    if (depthRow) depthRow.classList.toggle('hidden', graphMode !== 'local');
+  }
+
+  function updateStatus() {
+    const countEl = document.getElementById('status-count');
+    if (countEl) {
+      countEl.textContent = `${nodesData.length} nodos · ${linksData.length} aristas`;
+    }
+  }
+
+  function setSelectedStatus(text) {
+    const selEl = document.getElementById('status-selected');
+    if (selEl) selEl.textContent = text;
+  }
+
+  function truncate(s, max) {
+    if (!s) return '';
+    return s.length > max ? s.substring(0, max - 1) + '…' : s;
   }
 
   return {
-    init, selectNode, deselect, render, highlightByText, reheat,
-    setSelectedStatus, zoomBy, zoomReset,
-    get simulation() { return Graph._simulation; },
+    init,
+    render,
+    loadLocalGraph,
+    selectNode,
+    deselect,
+    zoomBy,
+    zoomReset,
+    highlightByText,
+    setSelectedStatus,
+    getSelected: () => selectedNode,
   };
 })();
+
+window.Graph = Graph;

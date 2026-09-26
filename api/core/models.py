@@ -72,3 +72,76 @@ class HealthResponse(BaseModel):
     version: str
     notes_count: int
     links_count: int
+
+
+class NoteRenameRequest(BaseModel):
+    new_title: str
+    new_path: str | None = None
+
+
+class NoteRenameResponse(BaseModel):
+    status: str
+    old_id: str
+    new_id: str
+    old_title: str
+    new_title: str
+    updated_files_count: int
+    updated_links_count: int
+
+
+class UnlinkedMentionItem(BaseModel):
+    source_id: str
+    source_title: str
+    snippet: str
+    match_text: str
+
+
+class UnlinkedMentionsResponse(BaseModel):
+    note_id: str
+    note_title: str
+    mentions: list[UnlinkedMentionItem]
+
+
+class LinkMentionRequest(BaseModel):
+    source_id: str
+    target_title: str
+
+
+class FileTreeNode(BaseModel):
+    name: str
+    type: Literal["file", "directory"]
+    path: str  # relative to vault
+    id: str | None = None
+    title: str | None = None
+    children: list["FileTreeNode"] = Field(default_factory=list)
+
+
+class CreateFolderRequest(BaseModel):
+    path: str
+
+
+class MoveNoteRequest(BaseModel):
+    note_id: str
+    target_folder: str  # relative folder path, e.g. "Projects" or ""
+
+
+class DailyNoteResponse(BaseModel):
+    note: Note
+    created: bool
+
+
+class LocalGraphResponse(BaseModel):
+    root_id: str
+    depth: int
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class DynamicQueryRequest(BaseModel):
+    query: str
+    limit: int = 50
+
+
+class DynamicQueryResponse(BaseModel):
+    columns: list[str]
+    rows: list[list]

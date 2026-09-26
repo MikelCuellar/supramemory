@@ -68,3 +68,12 @@ if settings.frontend_dir.exists():
         return FileResponse(str(settings.frontend_dir / "index.html"))
 else:
     log.warning("Frontend dir not found at %s — graph view disabled", settings.frontend_dir)
+
+# Attachments estáticos (/vault/attachments)
+attach_dir = settings.vault_path / "attachments"
+try:
+    attach_dir.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
+if attach_dir.exists():
+    app.mount("/attachments", StaticFiles(directory=str(attach_dir)), name="attachments")

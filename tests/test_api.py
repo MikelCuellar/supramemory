@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client(monkeypatch):
     """Cliente de test con DB y vault temporales."""
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         db = Path(tmp) / "test.db"
         vault = Path(tmp) / "vault"
         vault.mkdir()

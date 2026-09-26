@@ -1,11 +1,41 @@
-// App entry point — coordina filtros, búsqueda, graph view, panel lateral.
+// App entry point — coordina Explorer, Editor, Graph View, Búsqueda y Filtros.
 (async function () {
   const sidePanel = document.getElementById('side-panel');
   const panelContent = document.getElementById('panel-content');
   const legendItems = document.getElementById('legend-items');
   const searchInput = document.getElementById('search-input');
+  const sidebar = document.getElementById('vault-sidebar');
+  const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
 
-  // Init grafo
+  // Toggle Sidebar de archivos
+  toggleSidebarBtn?.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+  });
+
+  // Init Explorer
+  const explorerCont = document.getElementById('explorer-container');
+  if (explorerCont && window.Explorer) {
+    Explorer.init(explorerCont, (item) => {
+      if (!item) return;
+      // Abrir en el Editor y cambiar a tab de editor
+      if (window.Editor) {
+        Editor.open(item.id);
+        const editorTab = document.querySelector('[data-tab="editor"]');
+        if (editorTab) editorTab.click();
+      }
+    });
+  }
+
+  // Init Editor
+  const editorCont = document.getElementById('editor-container');
+  if (editorCont && window.Editor) {
+    Editor.init(editorCont, (note) => {
+      // Callback cuando la nota se actualiza -> recargar grafo
+      loadGraph();
+    });
+  }
+
+  // Init Grafo
   Graph.init(async (node) => {
     if (!node) {
       sidePanel.classList.add('collapsed');
@@ -18,12 +48,12 @@
 
   // Init filtros
   await Filters.init();
-  Filters.onChange((state) => {
+  Filters.onChange(() => {
     loadGraph();
   });
 
   // Close panel
-  document.getElementById('close-panel').addEventListener('click', () => {
+  document.getElementById('close-panel')?.addEventListener('click', () => {
     Graph.deselect();
   });
 
@@ -51,17 +81,25 @@
     });
   }
 
-  // Search
+  // Search & Global Keybindings
   let searchTimer = null;
-  searchInput.addEventListener('input', (e) => {
+  searchInput?.addEventListener('input', (e) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       Graph.highlightByText(e.target.value.trim());
     }, 200);
   });
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      Graph.highlightByText(e.target.value.trim());
+
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+K -> Focus búsqueda
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchInput?.focus();
+    }
+    // Ctrl+N -> Nueva nota
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      document.getElementById('btn-new-note')?.click();
     }
   });
 
@@ -90,7 +128,10 @@
     try {
       const rendered = await API.getRendered(node.id);
       panelContent.innerHTML = `
-        <h2>${escapeHtml(rendered.title)}</h2>
+        <div class="panel-actions-top">
+          <h2>${escapeHtml(rendered.title)}</h2>
+          <button id="btn-open-editor" class="btn-mini primary" title="Abrir en Editor Completo">✏️ Editar</button>
+        </div>
         <div class="meta">
           <span>id: ${escapeHtml(rendered.id)}</span>
           ${rendered.tags.length ? `<span>· ${rendered.tags.length} tags</span>` : ''}
@@ -100,7 +141,7 @@
             ${rendered.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}
           </div>
         ` : ''}
-        <div class="body">${rendered.html}</div>
+        <div class="body markdown-body">${rendered.html}</div>
         ${rendered.backlinks.length ? `
           <div class="backlinks">
             <h4>Backlinks (${rendered.backlinks.length})</h4>
@@ -109,7 +150,17 @@
         ` : ''}
       `;
 
-      // Click en backlink → carga ese nodo
+      // Botón editar
+      document.getElementById('btn-open-editor')?.addEventListener('click', () => {
+        if (window.Editor) {
+          Editor.open(node.id);
+          Explorer.setActive(node.id);
+          const editorTab = document.querySelector('[data-tab="editor"]');
+          if (editorTab) editorTab.click();
+        }
+      });
+
+      // Click en backlink
       panelContent.querySelectorAll('[data-backlink]').forEach(el => {
         el.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -142,7 +193,6 @@
   }
 
   function sourceColor(source) {
-    // Mapear source -> nombre de CSS variable
     const map = {
       teclera: '--c-teclera',
       geojobs: '--c-geojobs',
@@ -155,8 +205,8 @@
       session: '--c-session',
       email: '--c-email',
       stub: '--c-stub',
+      daily: '--c-daily',
     };
-    // Soportar agent:* (agent:master, agent:hermes, etc.)
     if (source && source.startsWith('agent')) return `var(--c-agent)`;
     const varName = map[source];
     if (!varName) return 'var(--c-default)';
@@ -171,6 +221,8 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+
+  window.appLoadGraph = loadGraph;
 })();
 
 // === Tokens tab logic ===
@@ -234,7 +286,6 @@ function escapeAttr(s) {
   return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
-// Hook form
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('token-form');
   if (form) {
