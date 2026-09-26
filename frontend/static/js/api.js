@@ -93,3 +93,5 @@ const API = (() => {
     ingest: () => req('/ingest/vault', { method: 'POST' }),
   };
 })();
+
+window.API = API;

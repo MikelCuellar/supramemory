@@ -13,12 +13,17 @@ const Explorer = (() => {
 
   async function loadTree() {
     if (!treeContainer) return;
+    if (typeof API === 'undefined' || typeof API.getTree !== 'function') {
+      console.warn("API.getTree not ready yet, retrying...");
+      setTimeout(loadTree, 200);
+      return;
+    }
     try {
       treeData = await API.getTree();
       renderTree(treeData);
     } catch (e) {
       console.error("Error loading vault tree:", e);
-      treeContainer.innerHTML = `<div class="tree-error">Error cargando archivos: ${e.message}</div>`;
+      treeContainer.innerHTML = `<div class="tree-error" style="padding:10px;font-size:12px;color:var(--fg-muted);">Error cargando archivos: ${e.message}<br><small>Si persiste, presiona Ctrl+F5 para limpiar caché.</small></div>`;
     }
   }
 
