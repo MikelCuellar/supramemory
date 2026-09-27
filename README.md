@@ -100,16 +100,16 @@ Supramemory está diseñado desde su núcleo para ser el centro de memoria persi
 sequenceDiagram
     autonumber
     actor User as 👤 Usuario
-    participant Agent as 🤖 Agente IA (Claude / Hermes / Cursor)
+    participant Agent as 🤖 Agente IA
     participant Supra as 🧠 Supramemory API
     participant Vault as 📁 Markdown Vault + SQLite
 
-    User->>Agent: "Implementar nuevo microservicio de autenticación"
+    User->>Agent: Implementar nuevo microservicio de autenticación
     Agent->>Supra: GET /agents/feed/digest?topics=auth,security,api
     Supra-->>Agent: Inyecta resumen ultra-denso en System Prompt
     Note over Agent: Razona usando memoria a largo plazo existente
     Agent->>User: Ejecuta la tarea con contexto histórico
-    Agent->>Supra: POST /agents/feed (Nuevo hallazgo, confidence: 0.95, [[Auth Service]])
+    Agent->>Supra: POST /agents/feed (Nuevo hallazgo, confidence: 0.95)
     Supra->>Vault: Guarda .md, resuelve wikilinks y actualiza Grafo FTS5
     Note over Supra: Memoria consolidada disponible para todos los agentes
 ```
@@ -538,18 +538,18 @@ supramemory/
 Supramemory implementa un modelo de seguridad por capas con el principio de **"Frictionless AI Access"**: máxima protección de datos contra accesos no autorizados sin añadir fricción a los agentes de IA (como CAPTCHAs, cookies de sesión o firmas OAuth complejas).
 
 ```mermaid
-graph TD
-    Client["🤖 Agente IA / 👤 Usuario"] -->|Bearer Token (sk-...)| SecMW["🛡️ Security Headers Middleware"]
-    SecMW --> AuthGuard{"🔑 Scope & Token Guard"}
+flowchart TD
+    Client["🤖 Agente IA / 👤 Usuario"] -->|"Bearer Token: sk-..."| SecMW["🛡️ Security Headers Middleware"]
+    SecMW --> AuthGuard{"🔑 Scope y Token Guard"}
     
-    AuthGuard -->|Token Inválido / Revocado| Block403["🚫 403 Forbidden / 401 Unauthorized"]
-    AuthGuard -->|Scope 'read'| ReadOnly["📖 Endpoints Lectura (/notes, /graph, /query, /feed GET)"]
-    AuthGuard -->|Scope 'write'| WriteAccess["✍️ Endpoints Escritura (Crear/Editar Notas, Feed POST)"]
-    AuthGuard -->|Scope 'admin'| AdminAccess["⚙️ Endpoints Admin (/tokens, /ingest)"]
+    AuthGuard -->|"Token Inválido o Revocado"| Block403["🚫 403 Forbidden / 401 Unauthorized"]
+    AuthGuard -->|"Scope read"| ReadOnly["📖 Endpoints Lectura: /notes, /graph, /query, /feed"]
+    AuthGuard -->|"Scope write"| WriteAccess["✍️ Endpoints Escritura: Crear/Editar Notas, Feed POST"]
+    AuthGuard -->|"Scope admin"| AdminAccess["⚙️ Endpoints Admin: /tokens, /ingest"]
     
-    ReadOnly --> SafeSQL["🔒 Dataview Query Sanitizer (Bloquea api_tokens & sqlite_master)"]
-    WriteAccess --> PathGuard["📁 Path Traversal Guard (Confinamiento estricto a /vault/)"]
-    WriteAccess --> MIMEGuard["📎 Attachment Whitelist (Bloqueo de .exe, .sh, .py, .php)"]
+    ReadOnly --> SafeSQL["🔒 Dataview Query Sanitizer: Bloquea api_tokens y sqlite_master"]
+    WriteAccess --> PathGuard["📁 Path Traversal Guard: Confinamiento estricto a /vault/"]
+    WriteAccess --> MIMEGuard["📎 Attachment Whitelist: Bloqueo de ejecutables"]
 ```
 
 ---
