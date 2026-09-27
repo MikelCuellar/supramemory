@@ -5,6 +5,8 @@
 
 *The missing link between human Personal Knowledge Management (PKM) and persistent, autonomous Long-Term Memory for AI Agents.*
 
+[![English](https://img.shields.io/badge/Language-English-blue.svg)](README.md)
+[![Español](https://img.shields.io/badge/Idioma-Español-red.svg)](README.es.md)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![SQLite FTS5](https://img.shields.io/badge/SQLite-FTS5%20BM25-003B57.svg?logo=sqlite&logoColor=white)](https://www.sqlite.org/fts5.html)
@@ -15,13 +17,13 @@
 
 ---
 
-[✨ Características](#-características-principales) •
-[🏆 Ventajas Competitivas](#-por-qué-supramemory-ventajas-frente-a-obsidian-y-vector-dbs) •
-[🤖 Playbook para Agentes IA](#-playbook-del-cerebro-ia-cómo-sacarle-el-máximo-provecho) •
-[📝 Experiencia Obsidian](#-experiencia-pkm-estilo-obsidian-para-humanos) •
-[🚀 Instalación & Despliegue](#-guía-de-instalación-y-despliegue-docker--vps) •
-[🛡️ Tests & Seguridad](#-seguridad-hardening-y-batería-de-tests-automatizados) •
-[📡 API Reference](#-referencia-de-api)
+[✨ Key Features](#-key-features) •
+[🏆 Competitive Advantages](#-why-supramemory-advantages-over-obsidian--vector-dbs) •
+[🤖 AI Agent Playbook](#-ai-agent-playbook-maximizing-long-term-memory) •
+[📝 Obsidian Experience](#-obsidian-grade-pkm-experience-for-humans) •
+[🚀 Installation & Deployment](#-installation--deployment-guide-docker--vps) •
+[🛡️ Tests & Security](#-security-hardening--automated-test-suite) •
+[📡 API Reference](#-api-reference)
 
 ---
 
@@ -35,56 +37,56 @@
 
 ---
 
-## 💡 ¿Qué es Supramemory?
+## 💡 What is Supramemory?
 
-**Supramemory** es un sistema de conocimiento de **doble ciudadanía**:
-1. 👤 **Para Humanos:** Un entorno de gestión de conocimiento personal (PKM) de nivel **Obsidian**, con editor Markdown *Live Preview / Split Mode*, autocompletado inteligente `[[wikilinks]]`, explorador de carpetas, refactorización segura de nombres (*Safe Rename*), menciones no enlazadas y consultas dinámicas tipo Dataview.
-2. 🤖 **Para Agentes de IA:** Una API REST asíncrona de alto rendimiento y servidor **Model Context Protocol (MCP)** que actúa como **Memoria Viva y Cerebro a Largo Plazo**, permitiendo a agentes (Claude, Cursor, Hermes, GPT, Swarms) consultar contexto pre-tarea, consolidar aprendizajes post-tarea y razonar sobre grafos relacionales en tiempo real.
+**Supramemory** is a **dual-citizen** knowledge operating system:
+1. 👤 **For Humans:** A top-tier **Obsidian-grade** Personal Knowledge Management (PKM) environment, featuring an interactive Markdown *Live Preview / Split View* editor, intelligent `[[wikilinks]]` omni-suggest, hierarchical file tree explorer, safe link refactoring (*Safe Rename*), unlinked mentions discovery, and live Dataview queries.
+2. 🤖 **For AI Agents:** A high-performance asynchronous REST API and **Model Context Protocol (MCP)** server acting as an **Autonomous Long-Term Brain**, allowing AI agents (Claude, Cursor, Hermes, GPT, Swarms) to retrieve pre-task context, consolidate post-task learnings, and reason across relational knowledge graphs in real time.
 
-Toda la información se almacena con filosofía **Local-First**: notas en **Markdown plano (`.md`)** en disco respaldadas por un índice relacional **SQLite con FTS5 (BM25)**, garantizando **cero vendor lock-in** e inspeccionabilidad humana total.
+All knowledge is built upon a strict **Local-First** philosophy: plain **Markdown (`.md`) files** on disk backed by an embedded **SQLite relational index with FTS5 (BM25 search)**, guaranteeing **zero vendor lock-in**, maximum privacy, and complete human inspectability.
 
 ---
 
-## 🏆 ¿Por qué Supramemory? Ventajas frente a Obsidian y Vector DBs
+## 🏆 Why Supramemory? Advantages over Obsidian & Vector DBs
 
-### 1. Supramemory vs. Obsidian, Notion y Herramientas PKM
+### 1. Supramemory vs. Obsidian, Notion, and Traditional PKM Tools
 
-| Dimensión | Obsidian / Logseq | Notion / Roam | Supramemory |
+| Dimension | Obsidian / Logseq | Notion / Roam | Supramemory |
 | :--- | :--- | :--- | :--- |
-| **Público Objetivo** | 100% Humano (Desktop Electron) | Gestión de notas SaaS en nube | **Híbrido: Humanos + Enjambre de Agentes IA** |
-| **API Nativa para Agentes** | ❌ Inexistente (requiere plugins inestables) | ⚠️ API REST lenta con límites de tasa | ✅ **API REST asíncrona nativa + MCP Server** |
-| **Modo Headless / Servidor** | ❌ No puede correr como servicio en VPS | ❌ Cerrado en servidores propietarios | ✅ **100% Headless Docker / VPS** (Coolify, Dokploy) |
-| **Seguridad Multi-Agente** | ❌ Sin soporte de tokens | ⚠️ Permisos rígidos de workspace | ✅ **API Tokens con scopes (`read`, `write`, `admin`)** |
-| **Trazabilidad (*Provenance*)**| ❌ Manual | ❌ Manual | ✅ **Registra autoría (`agent:hermes`), confianza (`0.95`) y timestamps** |
-| **Persistencia** | ✅ Markdown local | ❌ Propietario / Lock-in SaaS | ✅ **Markdown plano en disco + SQLite FTS5** |
+| **Primary Audience** | 100% Human (Electron Desktop) | SaaS Cloud Note Taking | **Hybrid: Humans + Autonomous AI Agents** |
+| **Native Agent API** | ❌ None (requires fragile community plugins) | ⚠️ Slow REST API with strict rate limits | ✅ **Native async REST API + MCP Server** |
+| **Headless / Server Mode** | ❌ Cannot run as a VPS headless background service | ❌ Proprietary cloud lock-in | ✅ **100% Headless Docker / VPS** (Coolify, Dokploy) |
+| **Multi-Agent Security** | ❌ No token/permission system | ⚠️ Rigid workspace ACLs | ✅ **Granular API Tokens (`read`, `write`, `admin`)** |
+| **Provenance Tracking** | ❌ Manual | ❌ Manual | ✅ **Tracks author (`agent:hermes`), confidence (`0.95`), and timestamps** |
+| **Data Persistence** | ✅ Local Markdown | ❌ Proprietary Cloud SaaS | ✅ **Plain Markdown on disk + SQLite FTS5** |
 
-### 2. Supramemory vs. Bases de Datos Vectoriales Puras (Pinecone, Chroma, Mem0)
+### 2. Supramemory vs. Pure Vector Databases (Pinecone, Chroma, Mem0)
 
-Las bases de datos vectoriales tradicionales fragmentan la información en incrustaciones (*embeddings*) numéricas opacas:
-- ❌ **Caja Negra:** El humano no puede ver, navegar ni corregir fácilmente lo que el agente aprende.
-- ❌ **Pérdida de Relaciones Explícitas:** La similitud por coseno no entiende dependencias directas (`A depende de B`, `X refactoriza Y`).
-- ❌ **Alto Consumo de Tokens:** El RAG clásico inyecta fragmentos desestructurados que saturan la ventana de contexto.
+Traditional vector databases break information into opaque numerical embeddings:
+- ❌ **Black Box:** Humans cannot inspect, browse, or easily curate what the agent learns.
+- ❌ **Loss of Explicit Relationships:** Cosine similarity cannot reliably infer exact relational rules (`A depends on B`, `X refactors Y`).
+- ❌ **High Token Consumption:** Naive RAG dumps unstructured chunks into prompt windows, causing context bloat and high inference costs.
 
-**La Solución Supramemory:**
-- ✅ **Curaduría y Corrección Humana:** Toda la memoria vive en archivos `.md` planos y en un grafo visual interactivo. Si la IA aprende un dato erróneo, el humano lo edita directamente.
-- ✅ **Razonamiento Asociativo Multidimensional:** Combina búsqueda léxica BM25 de alta precisión con **recorrido de grafos a *N* saltos (`/graph/local/{id}?depth=2`)**.
-- ✅ **Ahorro de Tokens con `/digest`:** Genera resúmenes ejecutivos condensados listos para inyectar en el prompt del sistema, ahorrando hasta un 80% de tokens.
+**The Supramemory Solution:**
+- ✅ **Human Curatable:** All memory lives in human-readable `.md` notes and an interactive force-directed visual graph. If an AI hallucinates or records false data, a human can edit it immediately.
+- ✅ **Multi-Hop Associative Reasoning:** Merges high-precision BM25 lexical ranking with **graph traversal (`/graph/local/{id}?depth=2`)**.
+- ✅ **Token Savings with `/digest`:** Assembles dense, token-optimized executive summaries ready for system prompts, saving up to 80% in token overhead.
 
 ---
 
-## 📸 Galería Visual de la Plataforma
+## 📸 Platform Visual Gallery
 
 <div align="center">
 
-### 🧠 1. Vista de Red Neuronal (Brain-like Knowledge Graph)
-*Simulación física en tiempo real impulsada por D3.js v7 con impulsos sinápticos animados, halos de energía y física de flotación.*
+### 🧠 1. Neural Knowledge Graph View
+*Real-time force-directed physics powered by D3.js v7 with flowing synaptic pulse particles, glowing halos, and organic layout simulation.*
 
 <img src="docs/images/neural_brain_graph.jpg" alt="Supramemory Neural Knowledge Graph" width="95%" style="border-radius: 8px;" />
 
 <br><br>
 
-### 📝 2. Editor Live Split-View & Inspector estilo Obsidian
-*Editor interactivo con doble panel, autocompletado omni-suggest para `[[wikilinks]]` y `#tags`, Callouts (`> [!NOTE]`), checklists y panel de menciones no enlazadas.*
+### 📝 2. Obsidian-Style Live Split-View Editor & Inspector
+*Interactive dual-pane Markdown editor with omni-suggest autocompletion for `[[wikilinks]]` and `#tags`, GitHub/Obsidian callouts (`> [!NOTE]`), interactive task lists, and unlinked mentions inspection.*
 
 <img src="docs/images/obsidian_editor_split.jpg" alt="Supramemory Live Split Editor" width="95%" style="border-radius: 8px;" />
 
@@ -92,93 +94,93 @@ Las bases de datos vectoriales tradicionales fragmentan la información en incru
 
 ---
 
-## 🤖 Playbook del Cerebro IA: Cómo Sacarle el Máximo Provecho
+## 🤖 AI Agent Playbook: Maximizing Long-Term Memory
 
-Supramemory está diseñado desde su núcleo para ser el centro de memoria persistente de cualquier arquitectura de Agentes Autónomos.
+Supramemory is engineered from the ground up to serve as the unified persistent memory core for autonomous multi-agent architectures.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as 👤 Usuario
-    participant Agent as 🤖 Agente IA
+    actor User as 👤 User
+    participant Agent as 🤖 AI Agent
     participant Supra as 🧠 Supramemory API
     participant Vault as 📁 Markdown Vault + SQLite
 
-    User->>Agent: Implementar nuevo microservicio de autenticación
+    User->>Agent: Implement new authentication microservice
     Agent->>Supra: GET /agents/feed/digest?topics=auth,security,api
-    Supra-->>Agent: Inyecta resumen ultra-denso en System Prompt
-    Note over Agent: Razona usando memoria a largo plazo existente
-    Agent->>User: Ejecuta la tarea con contexto histórico
-    Agent->>Supra: POST /agents/feed (Nuevo hallazgo, confidence: 0.95)
-    Supra->>Vault: Guarda .md, resuelve wikilinks y actualiza Grafo FTS5
-    Note over Supra: Memoria consolidada disponible para todos los agentes
+    Supra-->>Agent: Injects dense summary into System Prompt
+    Note over Agent: Reasons using existing long-term context
+    Agent->>User: Executes task informed by historical knowledge
+    Agent->>Supra: POST /agents/feed (New finding, confidence: 0.95)
+    Supra->>Vault: Stores .md note, resolves wikilinks & updates graph index
+    Note over Supra: Consolidated memory immediately available to all agents
 ```
 
-### 1. Inyección de Contexto Pre-Tarea (Pre-Execution Retrieval)
-Antes de responder una consulta o ejecutar un plan, el agente consulta la memoria viva para no empezar desde cero:
+### 1. Pre-Task Context Injection (Pre-Execution Retrieval)
+Before answering queries or executing complex workflows, an agent queries live memory to ground its context:
 
 ```python
 import requests
 
-API_URL = "https://tu-supramemory.dominio.com"
-TOKEN = "sk-TU_AGENTE_TOKEN"
+API_URL = "https://your-supramemory-instance.com"
+TOKEN = "sk-YOUR_AGENT_TOKEN"
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}
 
-# Opción A: Resumen ejecutivo condensado para inyectar en prompt
+# Option A: Dense executive summary tailored for system prompt injection
 digest = requests.get(
     f"{API_URL}/agents/feed/digest",
-    params={"topics": ["autenticacion", "seguridad", "docker"], "limit": 3},
+    params={"topics": ["auth", "security", "docker"], "limit": 3},
     headers=HEADERS
 ).json()
 
 system_prompt = f"""
-Eres un agente de arquitectura senior.
+You are a senior systems architect.
 {digest['meta']['digest_text']}
 
-Utiliza el conocimiento anterior para ejecutar la siguiente tarea.
+Use the accumulated knowledge above to execute the following task.
 """
 
-# Opción B: Búsqueda granular por relevancia BM25
+# Option B: High-precision BM25 lexical context query
 context = requests.get(
     f"{API_URL}/context",
-    params={"q": "tokens jwt expiracion", "limit": 3},
+    params={"q": "jwt token expiration refresh", "limit": 3},
     headers=HEADERS
 ).json()
 ```
 
 ---
 
-### 2. Consolidación de Aprendizajes Post-Tarea (Continuous Learning)
-Cuando el agente completa una tarea, descubre una solución o detecta una regla operativa, la persiste estructuradamente:
+### 2. Post-Task Learning Consolidation (Continuous Learning)
+Once an agent solves a bug, discovers an API requirement, or adopts an architectural guideline, it persists it permanently:
 
 ```python
-# El agente registra su aprendizaje con provenance y certeza
+# The agent records its structured finding with provenance and confidence
 requests.post(
     f"{API_URL}/agents/feed",
     headers=HEADERS,
     json={
-        "title": "Arquitectura JWT: Rotación de Claves",
-        "content": "Las claves públicas se verifican contra el endpoint JWKS. Ver [[Seguridad API]].\n\n- [x] Cache TTL configurado en 3600s\n- [ ] Añadir rate limit",
-        "topics": ["seguridad", "jwt", "arquitectura"],
+        "title": "JWT Architecture: Key Rotation Strategy",
+        "content": "Public verification keys are queried from the JWKS endpoint. See [[API Security]].\n\n- [x] Cache TTL configured to 3600s\n- [ ] Implement token bucket rate limiter",
+        "topics": ["security", "jwt", "architecture"],
         "kind": "observation",       # observation | summary | answer | link
-        "confidence": 0.95,          # Nivel de certeza (0.0 a 1.0)
-        "related": ["Seguridad API", "Docker Microservices"]  # Genera wikilinks automáticos
+        "confidence": 0.95,          # Confidence score (0.0 to 1.0)
+        "related": ["API Security", "Docker Microservices"]  # Generates bidirectional wikilinks
     }
 )
 ```
 
 ---
 
-### 3. Memoria Compartida Multi-Agente (*Swarm Intelligence*)
-Múltiples agentes especializados pueden colaborar a través del mismo cerebro sin duplicar llamadas ni saturar ventanas de contexto:
-- 🕵️ **Agente Investigador:** Lee documentación externa y aporta notas con `kind: summary` y tags `#research`.
-- 💻 **Agente Programador:** Consulta `/context?q=research` para programar la solución y aporta notas con `kind: observation`.
-- 🧪 **Agente QA:** Valida la implementación y actualiza los checklists `- [x]` de las notas en tiempo real.
+### 3. Multi-Agent Shared Swarm Memory (*Swarm Intelligence*)
+Specialized agents collaborate asynchronously through the shared knowledge brain without repeating expensive discovery queries:
+- 🕵️ **Researcher Agent:** Browses external documentation and publishes notes tagged `#research` with `kind: summary`.
+- 💻 **Coding Agent:** Queries `/context?q=research` to guide implementation and records architectural decisions with `kind: observation`.
+- 🧪 **QA Agent:** Validates functionality and checks off task lists (`- [x]`) across notes in real time.
 
 ---
 
-### 4. Integración con Model Context Protocol (MCP)
-Supramemory expone un servidor MCP listo para conectar con **Claude Desktop**, **Cursor IDE**, **Gemini CLI** o cualquier cliente compatible:
+### 4. Model Context Protocol (MCP) Integration
+Supramemory provides an out-of-the-box MCP server compatible with **Claude Desktop**, **Cursor IDE**, **Gemini CLI**, and any MCP client:
 
 ```json
 {
@@ -187,8 +189,8 @@ Supramemory expone un servidor MCP listo para conectar con **Claude Desktop**, *
       "command": "python",
       "args": ["-m", "scripts.mcp_server"],
       "env": {
-        "SUPRAMEMORY_URL": "https://tu-supramemory.dominio.com",
-        "SUPRAMEMORY_API_KEY": "sk-TU_TOKEN"
+        "SUPRAMEMORY_URL": "https://your-supramemory-instance.com",
+        "SUPRAMEMORY_API_KEY": "sk-YOUR_TOKEN"
       }
     }
   }
@@ -197,13 +199,13 @@ Supramemory expone un servidor MCP listo para conectar con **Claude Desktop**, *
 
 ---
 
-### 5. Razonamiento Asociativo por Grafos (*N-Hops Traversal*)
-Los agentes pueden navegar el subgrafo local de cualquier concepto para inferir relaciones complejas no evidentes mediante búsqueda léxica:
+### 5. Associative Multi-Hop Graph Reasoning (*N-Hops Traversal*)
+Agents can navigate the local subgraph of any concept to uncover multi-step dependencies that lexical queries cannot reveal:
 
 ```python
-# Obtener todos los nodos y conexiones a 2 saltos de distancia de "microservicios"
+# Fetch all nodes and edges within 2 hops of "microservices"
 subgraph = requests.get(
-    f"{API_URL}/graph/local/microservicios?depth=2",
+    f"{API_URL}/graph/local/microservices?depth=2",
     headers=HEADERS
 ).json()
 
@@ -213,29 +215,29 @@ for edge in subgraph["edges"]:
 
 ---
 
-## 📝 Experiencia PKM Estilo Obsidian (Para Humanos)
+## 📝 Obsidian-Grade PKM Experience (For Humans)
 
-Supramemory ofrece una interfaz visual completa diseñada para el flujo de trabajo moderno de toma de notas:
+Supramemory delivers a complete human-facing interface tuned for modern personal knowledge workflows:
 
-- ✏️ **Live Split Editor:** Edición lado a lado (código Markdown a la izquierda + render HTML interactivo a la derecha).
-- 🔍 **Autocompletado Omni-Suggest:** Al escribir `[[` o `#`, se despliega un menú flotante con búsqueda difusa de notas y tags existentes.
-- 📁 **Explorador de Carpetas (*File Tree*):** Organización jerárquica con subdirectorios ilimitados en `/vault/`.
-- 🔗 **Refactorización Segura (*Safe Rename*):** Al renombrar una nota, Supramemory actualiza automáticamente todos los `[[wikilinks]]` en el resto del vault.
-- 💡 **Menciones No Enlazadas (*Unlinked Mentions*):** Detecta menciones en texto plano y ofrece un botón de 1-click **"🔗 Enlazar"** para convertirlas en wikilinks.
-- 📋 **Callouts & Checklists:** Soporte completo para cajas de alerta (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!DANGER]`) y tareas interactivas `- [ ]` / `- [x]`.
-- ⚡ **Consultas Dinámicas (Dataview):** Bloques ` ```query SELECT title, tags FROM notes WHERE tag = 'proyecto' ``` ` que renderizan tablas en vivo.
-- 📅 **Notas Diarias (*Daily Notes*):** Acceso rápido con 1 clic para crear o abrir la nota de hoy basada en plantillas (`{{date}}`, `{{time}}`, `{{title}}`).
-- 📎 **Arrastre y Pegado de Imágenes (`Ctrl+V`):** Sube automáticamente imágenes y multimedia a `/vault/attachments/` e inserta `![[imagen.png]]`.
+- ✏️ **Live Split-View Editor:** Side-by-side editing with instant client-side preview rendering alongside raw Markdown.
+- 🔍 **Omni-Suggest Autocompletion:** Type `[[` for note linking or `#` for tag lookup with arrow-key keyboard navigation (`↑`, `↓`, `Enter`, `Esc`).
+- 📁 **File Tree Explorer:** Nested folder hierarchy with unlimited depth mirroring the physical `/vault/` folder.
+- 🔗 **Safe Rename Link Refactoring:** Renaming a note automatically cascades across all `[[wikilinks]]` in the entire vault.
+- 💡 **Unlinked Mentions Detection:** Automatically scans for plain-text mentions and provides a 1-click **"🔗 Link"** action to turn them into wikilinks.
+- 📋 **Callouts & Interactive Checklists:** Full support for callout alerts (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!DANGER]`) and interactive checklists (`- [ ]` / `- [x]`).
+- ⚡ **Dynamic Queries (Dataview):** Embed live SQL query blocks: ` ```query SELECT title, tags FROM notes WHERE tag = 'project' ``` `.
+- 📅 **Daily Notes:** 1-click daily note creation based on customizable templates (`{{date}}`, `{{time}}`, `{{title}}`).
+- 📎 **Image Clipboard Pasting (`Ctrl+V`) & Drag-and-Drop:** Automatically saves image attachments into `/vault/attachments/` and inserts `![[image.png]]`.
 
 ---
 
-## 🚀 Guía de Instalación y Despliegue (Docker & VPS)
+## 🚀 Installation & Deployment Guide (Docker & VPS)
 
-Supramemory puede desplegarse en segundos tanto en tu máquina local como en cualquier servidor VPS en producción.
+Supramemory can be deployed in seconds on your local machine or any production cloud VPS.
 
 ```mermaid
 graph LR
-    subgraph Local_or_VPS["🐳 Host / Servidor VPS"]
+    subgraph Local_or_VPS["🐳 Host / VPS Server"]
         Docker["📦 Docker Container (FastAPI + D3.js)"]
         VaultVol[("📁 /vault (Markdown Files)")]
         DBVol[("🗄️ /db (SQLite FTS5)")]
@@ -243,56 +245,56 @@ graph LR
         Docker --> DBVol
     end
     Nginx["🌐 Nginx / Reverse Proxy (SSL Certbot)"] -->|:8000| Docker
-    Clients["🤖 Agentes IA & 👤 Navegadores"] -->|HTTPS + Bearer Token| Nginx
+    Clients["🤖 AI Agents & 👤 Web Browsers"] -->|HTTPS + Bearer Token| Nginx
 ```
 
 ---
 
-### 🐳 Opción 1: Docker Compose Local (Recomendado)
+### 🐳 Option 1: Local Docker Compose (Recommended)
 
-La forma más rápida y limpia de ejecutar Supramemory en local con persistencia completa:
+The cleanest and fastest way to run Supramemory locally with full data persistence:
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clone the repository
 git clone https://github.com/MikelCuellar/supramemory.git
 cd supramemory
 
-# 2. Configurar variables de entorno
+# 2. Configure environment variables
 cp .env.example .env
-# Edita .env y define una API_KEY segura para el usuario maestro
+# Edit .env and set a secure master API_KEY
 
-# 3. Construir e iniciar en segundo plano
+# 3. Build and launch in background
 docker compose up -d --build
 
-# 4. Verificar estado y logs
+# 4. Verify service status and logs
 docker compose ps
 docker compose logs -f
 
-# 5. Comprobar health check
+# 5. Check health endpoint
 curl http://localhost:8000/health
-# Abre en tu navegador: http://localhost:8000
+# Open in your browser: http://localhost:8000
 ```
 
 ---
 
-### 📦 Opción 2: Docker CLI Directo (Standalone Container)
+### 📦 Option 2: Standalone Docker CLI
 
-Si prefieres ejecutar directamente sin Docker Compose montando volúmenes persistentes en tu host:
+If you prefer launching directly via Docker CLI with host volume mounts:
 
 ```bash
-# 1. Construir la imagen Docker
+# 1. Build the Docker image
 docker build -t supramemory:latest .
 
-# 2. Crear carpetas locales de persistencia
+# 2. Create local persistent storage directories
 mkdir -p ./data/vault ./data/db
 
-# 3. Ejecutar el contenedor
+# 3. Run the container
 docker run -d \
   --name supramemory \
   -p 8000:8000 \
   -v "$(pwd)/data/vault:/vault:rw" \
   -v "$(pwd)/data/db:/db:rw" \
-  -e API_KEY="tu-super-clave-maestra-segura" \
+  -e API_KEY="your-secure-master-api-key" \
   -e LOG_LEVEL="info" \
   -e CORS_ORIGINS="*" \
   --restart unless-stopped \
@@ -301,29 +303,29 @@ docker run -d \
 
 ---
 
-### 🌐 Opción 3: Despliegue en Servidor VPS Linux (Ubuntu / Debian con Nginx + SSL)
+### 🌐 Option 3: Production Linux VPS Deployment (Ubuntu / Debian with Nginx + SSL)
 
-Guía completa para poner Supramemory en producción en cualquier proveedor cloud (Hetzner, DigitalOcean, AWS, Linode, OVH):
+Step-by-step production deployment guide for cloud providers (Hetzner, DigitalOcean, AWS, Linode, OVH):
 
-#### 1. Preparar el servidor y clonar el proyecto
+#### 1. Server Setup and Code Checkout
 ```bash
-# Instalar Docker & Docker Compose (si no están instalados)
+# Install Docker & Docker Compose
 curl -fsSL https://get.docker.com | sh
 
-# Crear directorio de despliegue
+# Prepare deployment directory
 sudo mkdir -p /opt/supramemory
 sudo chown $USER:$USER /opt/supramemory
 cd /opt/supramemory
 
-# Clonar repositorio
+# Clone repository
 git clone https://github.com/MikelCuellar/supramemory.git .
 ```
 
-#### 2. Configurar variables de entorno de producción
+#### 2. Configure Production Environment
 ```bash
 cat << 'EOF' > .env
 PORT=8000
-API_KEY=GeneraUnaClaveMaestraMuyRobustaAqui_sk99382193
+API_KEY=GenerateAStrongMasterKeyHere_sk99382193
 LOG_LEVEL=info
 CORS_ORIGINS=*
 VAULT_PATH=/vault
@@ -331,17 +333,17 @@ DB_PATH=/db/supramemory.db
 EOF
 ```
 
-#### 3. Iniciar el servicio con Docker Compose
+#### 3. Launch with Docker Compose
 ```bash
 docker compose up -d --build
 ```
 
-#### 4. Configurar Proxy Inverso Nginx con SSL (Certbot Let's Encrypt)
-Crea la configuración de Nginx en `/etc/nginx/sites-available/supramemory`:
+#### 4. Configure Nginx Reverse Proxy with Let's Encrypt SSL
+Create the Nginx configuration at `/etc/nginx/sites-available/supramemory`:
 
 ```nginx
 server {
-    server_name supramemory.tudominio.com;
+    server_name supramemory.yourdomain.com;
 
     client_max_body_size 50M;
 
@@ -349,139 +351,139 @@ server {
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
         
-        # Cabeceras estándar para agentes y web
+        # Standard proxy headers
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Authorization $http_authorization;
 
-        # WebSockets (para actualizaciones en vivo del editor/grafo)
+        # WebSocket support for live editor & graph updates
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
     }
 }
 ```
 
-Habilitar el sitio y generar el certificado SSL automático:
+Enable site and provision SSL certificates:
 ```bash
 sudo ln -s /etc/nginx/sites-available/supramemory /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d supramemory.tudominio.com
+sudo certbot --nginx -d supramemory.yourdomain.com
 ```
 
 ---
 
-### ⚡ Opción 4: Despliegue en 1-Clic en Coolify, Dokploy o Portainer
+### ⚡ Option 4: 1-Click Deployment on Coolify, Dokploy, or Portainer
 
-Supramemory es 100% compatible con plataformas PaaS autodirigidas:
+Supramemory is 100% cloud-native and ready for self-hosted PaaS platforms:
 
-1. **Crear Nueva Aplicación** apuntando al repositorio de GitHub: `https://github.com/MikelCuellar/supramemory`.
-2. **Tipo de Build:** Dockerfile o Nixpacks.
-3. **Mapeo de Volúmenes Persistentes (Esencial):**
-   - Destino en contenedor: `/vault` ➔ Almacenamiento persistente de notas `.md` y adjuntos.
-   - Destino en contenedor: `/db` ➔ Base de datos relacional y búsqueda `supramemory.db`.
-4. **Variables de Entorno Mínimas:**
-   - `API_KEY`: Tu clave maestra de administración.
-   - `PORT`: `8000` (o el puerto asignado por tu plataforma).
+1. **Create New Application** pointing to the GitHub repo: `https://github.com/MikelCuellar/supramemory`.
+2. **Build Pack:** Dockerfile.
+3. **Persistent Volume Mounts (Essential):**
+   - Container Destination: `/vault` ➔ Persistent storage for `.md` notes and attachments.
+   - Container Destination: `/db` ➔ Relational database and search index `supramemory.db`.
+4. **Environment Variables:**
+   - `API_KEY`: Your master administrative API key.
+   - `PORT`: `8000` (or your platform's internal target port).
 
 ---
 
-### 🐍 Opción 5: Desarrollo Local con Python (Sin Docker)
+### 🐍 Option 5: Local Python Development (Without Docker)
 
 ```bash
-# 1. Crear y activar entorno virtual
+# 1. Create and activate virtual environment
 python3 -m venv .venv
-source .venv/bin/activate   # En Windows: .venv\Scripts\activate
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Configurar variables y ejecutar
+# 3. Configure and run development server
 cp .env.example .env
 uvicorn api.main:app --reload --port 8000
 ```
 
 ---
 
-## 📡 Referencia de API
+## 📡 API Reference
 
-Todos los endpoints (excepto `/health` y documentación) requieren autorización mediante token: `Authorization: Bearer <TOKEN>`.
+All private endpoints require Bearer authentication: `Authorization: Bearer <TOKEN>`.
 
-### 🧠 Memoria y Agentes IA
-| Método | Endpoint | Scope | Descripción |
+### 🧠 Memory & AI Agent Endpoints
+| Method | Endpoint | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/context?q=...&limit=5` | `read` | **Estrella:** Devuelve fragmentos y notas de alta relevancia BM25. |
-| `GET` | `/agents/feed/digest?topics=...` | `read` | **Estrella:** Resumen ultra-denso listo para inyectar en prompts. |
-| `POST` | `/agents/feed` | `write` | Aporta aprendizajes estructurados con autoría y nivel de confianza. |
-| `GET` | `/agents/feed?topics=...` | `read` | Consulta feeds de conocimiento por tópicos. |
+| `GET` | `/context?q=...&limit=5` | `read` | **Flagship:** High-relevance BM25 context snippets and notes. |
+| `GET` | `/agents/feed/digest?topics=...` | `read` | **Flagship:** Token-optimized dense summary for prompt injection. |
+| `POST` | `/agents/feed` | `write` | Contributes structured findings with provenance and confidence. |
+| `GET` | `/agents/feed?topics=...` | `read` | Queries knowledge feeds filtered by topics. |
 
-### 📝 Notas y Vault (Paridad Obsidian)
-| Método | Endpoint | Scope | Descripción |
+### 📝 Notes & Vault (Obsidian Parity)
+| Method | Endpoint | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/notes` | `read` | Lista notas con filtros (`?tag=`, `?source=`, `?limit=`). |
-| `GET` | `/notes/tree` | `read` | Obtiene el árbol jerárquico de archivos y carpetas del vault. |
-| `POST` | `/notes` | `write` | Crea una nota en base de datos y archivo `.md` en disco. |
-| `GET` | `/notes/{id}` | `read` | Obtiene el contenido plano, tags y enlaces de una nota. |
-| `GET` | `/notes/{id}/render` | `read` | Obtiene el renderizado HTML completo (Callouts, Dataview, Wikilinks). |
-| `POST` | `/notes/rename?note_id=...` | `write` | **Safe Rename:** Renombra la nota y refactoriza wikilinks en todo el vault. |
-| `GET` | `/notes/{id}/unlinked-mentions` | `read` | Encuentra menciones no enlazadas de esta nota en el vault. |
-| `POST` | `/notes/{id}/link-mention` | `write` | Convierte una mención en texto plano en un `[[wikilink]]`. |
-| `POST` | `/notes/daily` | `write` | Abre o crea la nota diaria de hoy (`YYYY-MM-DD.md`). |
-| `POST` | `/notes/folders` | `write` | Crea una nueva carpeta en `/vault/`. |
-| `POST` | `/notes/move` | `write` | Mueve una nota a otra subcarpeta del vault. |
-| `POST` | `/notes/attachments` | `write` | Sube un archivo adjunto a `/vault/attachments/`. |
+| `GET` | `/notes` | `read` | Lists notes with filtering (`?tag=`, `?source=`, `?limit=`). |
+| `GET` | `/notes/tree` | `read` | Returns the hierarchical file and folder tree of the vault. |
+| `POST` | `/notes` | `write` | Creates a note in SQLite and writes the `.md` file to disk. |
+| `GET` | `/notes/{id}` | `read` | Returns raw markdown content, metadata, tags, and links. |
+| `GET` | `/notes/{id}/render` | `read` | Returns rendered HTML (Callouts, Dataview blocks, Wikilinks). |
+| `POST` | `/notes/rename?note_id=...` | `write` | **Safe Rename:** Renames note and refactors wikilinks across vault. |
+| `GET` | `/notes/{id}/unlinked-mentions` | `read` | Finds plain-text unlinked mentions of this note in the vault. |
+| `POST` | `/notes/{id}/link-mention` | `write` | Converts an unlinked mention into an explicit `[[wikilink]]`. |
+| `POST` | `/notes/daily` | `write` | Opens or creates today's Daily Note (`YYYY-MM-DD.md`). |
+| `POST` | `/notes/folders` | `write` | Creates a new directory inside `/vault/`. |
+| `POST` | `/notes/move` | `write` | Moves a note to a different folder path in the vault. |
+| `POST` | `/notes/attachments` | `write` | Uploads an attachment to `/vault/attachments/`. |
 
-### 🕸️ Grafo y Consultas
-| Método | Endpoint | Scope | Descripción |
+### 🕸️ Knowledge Graph & Queries
+| Method | Endpoint | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/graph` | `read` | Nodos y aristas para la simulación neural D3.js. |
-| `GET` | `/graph/local/{note_id}?depth=2`| `read` | **Local Graph:** Subgrafo centrado en la nota a *N* saltos. |
-| `GET` | `/query?q=...` | `read` | Búsqueda full-text FTS5 con ranking BM25. |
-| `POST` | `/query/execute` | `read` | Ejecuta consultas dinámicas SQL de solo lectura seguras. |
+| `GET` | `/graph` | `read` | Nodes and edges for D3.js neural graph simulation. |
+| `GET` | `/graph/local/{note_id}?depth=2`| `read` | **Local Graph:** Centered subgraph within *N* relational hops. |
+| `GET` | `/query?q=...` | `read` | Full-text FTS5 search with BM25 ranking. |
+| `POST` | `/query/execute` | `read` | Executes sanitized read-only dynamic SQL queries. |
 
-### 🔑 Seguridad y API Tokens (Admin)
-| Método | Endpoint | Scope | Descripción |
+### 🔑 Security & Token Management (Admin Only)
+| Method | Endpoint | Required Scope | Description |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/tokens` | `admin` | Crea un nuevo API Token con scopes (`read`, `write`, `admin`). |
-| `GET` | `/tokens` | `admin` | Lista los tokens existentes y metadatos de último uso. |
-| `POST` | `/tokens/{name}/revoke` | `admin` | Revoca un token inmediatamente. |
-| `DELETE` | `/tokens/{name}` | `admin` | Elimina permanentemente un token. |
+| `POST` | `/tokens` | `admin` | Issues a new API Token with scopes (`read`, `write`, `admin`). |
+| `GET` | `/tokens` | `admin` | Lists existing tokens and last-used metadata. |
+| `POST` | `/tokens/{name}/revoke` | `admin` | Revokes an active token immediately. |
+| `DELETE` | `/tokens/{name}` | `admin` | Permanently deletes a token. |
 
 ---
 
-## 💻 Ejemplos de Código para Integración
+## 💻 Integration Code Examples
 
 ### Python Client (Hermes / LangChain / LlamaIndex)
 
 ```python
 from scripts.hermes_client import HermesSupramemory
 
-# 1. Inicializar cliente con token de agente
+# 1. Initialize client with agent token
 brain = HermesSupramemory(
-    api_url="https://tu-supramemory.dominio.com",
-    token="sk-TU_AGENTE_TOKEN"
+    api_url="https://your-supramemory-instance.com",
+    token="sk-YOUR_AGENT_TOKEN"
 )
 
-# 2. Consultar memoria antes de responder
+# 2. Query long-term memory before answering
 context = brain.get_context(query="docker redis clustering", limit=3)
 
-# 3. Guardar nuevo descubrimiento post-tarea
+# 3. Persist new finding post-task
 brain.save_learning(
-    title="Redis Cluster: Configuración Sentinel",
-    content="Para alta disponibilidad, Sentinel requiere un quórum de 2 nodos. Ver [[Docker Compose]].",
-    topics=["redis", "docker", "infraestructura"],
-    related=["Docker Compose", "Microservicios"]
+    title="Redis Cluster: Sentinel Configuration",
+    content="For high availability, Sentinel requires a quorum of 2 nodes. See [[Docker Compose]].",
+    topics=["redis", "docker", "infrastructure"],
+    related=["Docker Compose", "Microservices"]
 )
 ```
 
 ### TypeScript / JavaScript (Node.js / Bun / Next.js)
 
 ```typescript
-const API_URL = "https://tu-supramemory.dominio.com";
-const TOKEN = "sk-TU_AGENTE_TOKEN";
+const API_URL = "https://your-supramemory-instance.com";
+const TOKEN = "sk-YOUR_AGENT_TOKEN";
 
-// Consultar contexto
+// Query contextual memory
 async function fetchMemory(query: string) {
   const res = await fetch(`${API_URL}/context?q=${encodeURIComponent(query)}&limit=3`, {
     headers: { Authorization: `Bearer ${TOKEN}` }
@@ -489,7 +491,7 @@ async function fetchMemory(query: string) {
   return await res.json();
 }
 
-// Persistir aprendizaje
+// Record agent finding
 async function recordObservation(title: string, markdown: string, topics: string[]) {
   await fetch(`${API_URL}/agents/feed`, {
     method: "POST",
@@ -510,75 +512,75 @@ async function recordObservation(title: string, markdown: string, topics: string
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Repository Structure
 
 ```
 supramemory/
-├── api/                       # Backend FastAPI
-│   ├── core/                  # Configuración, Base de Datos SQLite FTS5 y Seguridad Scopes
-│   ├── routers/               # Endpoints REST (/notes, /graph, /agents, /query, /tokens)
-│   └── services/              # Lógica de Negocio (Markdown, Refactor, Vault Tree, Query Engine)
-├── frontend/                  # Interfaz Web (Vanilla JS + D3.js v7, sin build step)
-│   ├── index.html             # Layout principal (Explorer + Editor + Grafo + Tokens)
-│   └── static/                # JS modular (app, graph, editor, explorer, tokens) y CSS
-├── data/                      # Volúmenes locales persistentes
-│   ├── vault/                 # Archivos Markdown planos (.md) y attachments/
-│   └── db/                    # Base de datos SQLite (supramemory.db)
-├── scripts/                   # Clientes de agentes IA (hermes_client.py, mcp_server.py)
-├── tests/                     # Suite de pruebas automatizadas (test_api.py, test_obsidian.py, test_security.py)
-├── docs/                      # Documentación de arquitectura, API e imágenes
-├── Dockerfile                 # Imagen Docker optimizada
-└── docker-compose.yml         # Orquestación de contenedores
+├── api/                       # FastAPI Backend
+│   ├── core/                  # Configuration, SQLite FTS5 Database, RBAC Scopes
+│   ├── routers/               # REST Endpoints (/notes, /graph, /agents, /query, /tokens)
+│   └── services/              # Domain Logic (Markdown, Refactor, Vault Tree, Query Engine)
+├── frontend/                  # Web Client (Vanilla JS + D3.js v7, zero build step)
+│   ├── index.html             # Main Layout (Explorer + Editor + Graph + Tokens)
+│   └── static/                # Modular JS (app, graph, editor, explorer, tokens) & CSS
+├── data/                      # Local persistent volumes
+│   ├── vault/                 # Plain Markdown notes (.md) and attachments/
+│   └── db/                    # SQLite database (supramemory.db)
+├── scripts/                   # AI Agent integrations (hermes_client.py, mcp_server.py)
+├── tests/                     # Automated test suites (test_api.py, test_obsidian.py, test_security.py)
+├── docs/                      # Architectural guides, API documentation, screenshots
+├── Dockerfile                 # Optimized multi-stage Docker build
+└── docker-compose.yml         # Container orchestration configuration
 ```
 
 ---
 
-## 🛡️ Seguridad, Hardening y Batería de Tests Automatizados
+## 🛡️ Security Hardening & Automated Test Suite
 
-Supramemory implementa un modelo de seguridad por capas con el principio de **"Frictionless AI Access"**: máxima protección de datos contra accesos no autorizados sin añadir fricción a los agentes de IA (como CAPTCHAs, cookies de sesión o firmas OAuth complejas).
+Supramemory enforces a defense-in-depth model built around **"Frictionless AI Access"**: maximum protection against unauthorized access without introducing friction for AI agents (such as CAPTCHAs, session cookies, or complex OAuth handshakes).
 
 ```mermaid
 flowchart TD
-    Client["🤖 Agente IA / 👤 Usuario"] -->|"Bearer Token: sk-..."| SecMW["🛡️ Security Headers Middleware"]
-    SecMW --> AuthGuard{"🔑 Scope y Token Guard"}
+    Client["🤖 AI Agent / 👤 User"] -->|"Bearer Token: sk-..."| SecMW["🛡️ Security Headers Middleware"]
+    SecMW --> AuthGuard{"🔑 Scope & Token Guard"}
     
-    AuthGuard -->|"Token Inválido o Revocado"| Block403["🚫 403 Forbidden / 401 Unauthorized"]
-    AuthGuard -->|"Scope read"| ReadOnly["📖 Endpoints Lectura: /notes, /graph, /query, /feed"]
-    AuthGuard -->|"Scope write"| WriteAccess["✍️ Endpoints Escritura: Crear/Editar Notas, Feed POST"]
-    AuthGuard -->|"Scope admin"| AdminAccess["⚙️ Endpoints Admin: /tokens, /ingest"]
+    AuthGuard -->|"Invalid or Revoked Token"| Block403["🚫 403 Forbidden / 401 Unauthorized"]
+    AuthGuard -->|"Scope read"| ReadOnly["📖 Read Endpoints: /notes, /graph, /query, /feed"]
+    AuthGuard -->|"Scope write"| WriteAccess["✍️ Write Endpoints: Create/Edit Notes, Feed POST"]
+    AuthGuard -->|"Scope admin"| AdminAccess["⚙️ Admin Endpoints: /tokens, /ingest"]
     
-    ReadOnly --> SafeSQL["🔒 Dataview Query Sanitizer: Bloquea api_tokens y sqlite_master"]
-    WriteAccess --> PathGuard["📁 Path Traversal Guard: Confinamiento estricto a /vault/"]
-    WriteAccess --> MIMEGuard["📎 Attachment Whitelist: Bloqueo de ejecutables"]
+    ReadOnly --> SafeSQL["🔒 Dataview Query Sanitizer: Blocks api_tokens and system tables"]
+    WriteAccess --> PathGuard["📁 Path Traversal Guard: Strict jail to /vault/"]
+    WriteAccess --> MIMEGuard["📎 Attachment Whitelist: Blocks executables"]
 ```
 
 ---
 
-### 🧪 1. Dimensiones de Seguridad Evaluadas en los Tests
+### 🧪 1. Tested Security Dimensions
 
-Cada vulnerabilidad potencial cuenta con tests unitarios automatizados en [`tests/test_security.py`](tests/test_security.py):
+Every security layer is verified by automated regression tests in [`tests/test_security.py`](tests/test_security.py):
 
-| Dimensión de Seguridad | Test Automatizado | Vulnerabilidad Mitigada / Comportamiento Esperado |
+| Security Dimension | Automated Test | Mitigated Vulnerability / Verified Behavior |
 | :--- | :--- | :--- |
-| **Control de Acceso Universal** | `test_unauthenticated_endpoints_rejected` | Todos los endpoints privados (`/notes`, `/tokens`, `/query`, `/graph`, `/agents/feed`, `/ingest`) rechazan peticiones anónimas retornando `401 Unauthorized`. |
-| **Protección contra Timing Attacks** | `secrets.compare_digest` en `security.py` | La comparación del Master Key se realiza en tiempo constante para neutralizar ataques por canal lateral de temporización. |
-| **Aislamiento Estricto de Scopes (RBAC)** | `test_read_scope_cannot_perform_writes_or_admin` | Un token con scope `read` puede consultar notas, grafos y feeds, pero tiene **bloqueado** crear notas, modificar carpetas o administrar tokens (`403 Forbidden`). |
-| **Separación de Privilegios Admin** | `test_write_scope_cannot_perform_admin` | Un token con scope `write` puede crear notas y aportar al feed, pero no puede crear/revocar tokens ni reindexar el vault (`403 Forbidden`). |
-| **Blindaje Dataview SQL contra Robo de Credenciales** | `test_query_engine_blocks_credential_theft` | El motor `/query/execute` bloquea consultas que intenten leer `api_tokens` (hashes de credenciales) o tablas del sistema SQLite (`sqlite_master`, `sqlite_schema`, `sqlite_sequence`). |
-| **Bloqueo de DDL/DML Destructivo** | `test_query_engine_blocks_ddl_and_dml` | Bloqueo absoluto de sentencias `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER` o `PRAGMA` en el motor de consultas dinámicas. |
-| **Prevención de Path Traversal** | `test_path_traversal_in_folders_blocked`, `test_path_traversal_in_move_note_blocked` | Validación estricta con `is_relative_to` y bloqueo de secuencias `..` para impedir que operaciones de carpetas o notas escapen del directorio `/vault/`. |
-| **Whitelist de Adjuntos Seguros** | `test_dangerous_attachment_extensions_rejected` | Bloqueo estricto de archivos ejecutables (`.exe`, `.sh`, `.php`, `.py`, `.bat`), permitiendo únicamente formatos seguros (imágenes, audios, documentos `.pdf`, `.md`, `.txt`, `.json`). |
-| **Inyección de Cabeceras HTTP de Seguridad** | `test_security_headers_injected_in_responses` | Inyección automática de `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block` y `Referrer-Policy: strict-origin-when-cross-origin`. |
-| **Ciclo de Vida & Revocación** | `test_expired_token_rejected`, `test_revoke_token` | Tokens revocados o con timestamp de expiración vencido (`expires_at`) son invalidados inmediatamente. |
+| **Universal Access Control** | `test_unauthenticated_endpoints_rejected` | All private endpoints (`/notes`, `/tokens`, `/query`, `/graph`, `/agents/feed`, `/ingest`) reject anonymous requests with `401 Unauthorized`. |
+| **Timing Attack Mitigation** | `secrets.compare_digest` in `security.py` | Master key comparison uses constant-time validation to prevent side-channel timing attacks. |
+| **Strict Scope Isolation (RBAC)** | `test_read_scope_cannot_perform_writes_or_admin` | A token with `read` scope can browse notes, graphs, and feeds, but is strictly **forbidden** from modifying files or managing tokens (`403 Forbidden`). |
+| **Admin Privilege Separation** | `test_write_scope_cannot_perform_admin` | A token with `write` scope can create and edit notes, but cannot generate or revoke tokens or reindex vaults (`403 Forbidden`). |
+| **SQL Credential Theft Protection** | `test_query_engine_blocks_credential_theft` | The `/query/execute` engine blocks queries attempting to read `api_tokens` or SQLite system schemas (`sqlite_master`, `sqlite_schema`, `sqlite_sequence`). |
+| **Destructive DDL/DML Blocking** | `test_query_engine_blocks_ddl_and_dml` | Rejects `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, or `PRAGMA` statements in dynamic queries. |
+| **Path Traversal Prevention** | `test_path_traversal_in_folders_blocked`, `test_path_traversal_in_move_note_blocked` | Strict `is_relative_to` validation and `..` sequence blocking prevents file operations from escaping `/vault/`. |
+| **Attachment Extension Whitelist** | `test_dangerous_attachment_extensions_rejected` | Blocks dangerous executable extensions (`.exe`, `.sh`, `.php`, `.py`, `.bat`), allowing only safe media and document formats. |
+| **HTTP Security Headers** | `test_security_headers_injected_in_responses` | Automatically injects `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, and `Referrer-Policy: strict-origin-when-cross-origin`. |
+| **Token Lifecycle & Expiration** | `test_expired_token_rejected`, `test_revoke_token` | Revoked tokens or tokens past their `expires_at` timestamp are invalidated immediately. |
 
 ---
 
-### 📊 2. Ejecución de la Suite de Pruebas
+### 📊 2. Running the Test Suite
 
-Para ejecutar la suite completa de pruebas unitarias, paridad Obsidian y seguridad:
+To run the complete automated test battery (API functionality, Obsidian parity, and security hardening):
 
 ```bash
-# Ejecutar toda la batería con pytest
+# Run all tests with pytest
 pytest -v
 ```
 
@@ -631,14 +633,14 @@ tests/test_security.py::test_security_headers_injected_in_responses PASSED [100%
 
 ---
 
-## 🔒 Privacidad y Local-First
+## 🔒 Privacy & Local-First Guarantees
 
-- **Zero Telemetry:** Ningún dato sale de tu servidor o VPS.
-- **Hash Criptográfico:** Las API Keys se guardan con hash SHA-256 en la base de datos SQLite. La clave en texto plano solo se muestra una vez al momento de creación.
-- **Auditoría de Producción:** Probado y validado en entornos reales de producción (`supramemory.grupogeo.cl`).
+- **Zero Telemetry:** No telemetry, tracking, or analytics data leaves your host or VPS.
+- **Cryptographic Hashing:** API tokens are stored using SHA-256 hashes in the SQLite database. Plaintext tokens are only displayed once upon creation.
+- **Production Proven:** Audited and verified in active production environments (`supramemory.grupogeo.cl`).
 
 ---
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto está bajo la Licencia **MIT**. Puedes usarlo, modificarlo y distribuirlo libremente para proyectos personales o comerciales.
+This project is open-source under the **MIT License**. You are free to use, modify, and distribute it for personal or commercial projects.
