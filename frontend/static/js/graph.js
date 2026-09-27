@@ -363,35 +363,46 @@ const Graph = (() => {
     const ctrlPanel = document.createElement('div');
     ctrlPanel.id = 'graph-physics-panel';
     ctrlPanel.className = 'graph-physics-panel collapsed';
+    const titleTxt = window.I18n ? window.I18n.t('graph_physics_title') : 'Ajustes de Grafo';
+    const modeTxt = window.I18n ? window.I18n.t('graph_mode') : 'Modo:';
+    const globalTxt = window.I18n ? window.I18n.t('graph_mode_global') : 'Global';
+    const localTxt = window.I18n ? window.I18n.t('graph_mode_local') : 'Local';
+    const depthTxt = window.I18n ? window.I18n.t('graph_depth') : 'Profundidad:';
+    const hopTxt = window.I18n ? window.I18n.t('graph_hop') : 'salto';
+    const chargeTxt = window.I18n ? window.I18n.t('graph_charge') : 'Repulsión:';
+    const distTxt = window.I18n ? window.I18n.t('graph_dist') : 'Distancia:';
+    const orphansTxt = window.I18n ? window.I18n.t('graph_orphans') : 'Mostrar huérfanos';
+    const labelsTxt = window.I18n ? window.I18n.t('graph_labels') : 'Mostrar etiquetas';
+
     ctrlPanel.innerHTML = `
-      <button id="toggle-physics-btn" class="physics-toggle-btn" title="Ajustes de Grafo y Físicas">⚙️</button>
+      <button id="toggle-physics-btn" class="physics-toggle-btn" data-i18n-title="graph_physics_title" title="${titleTxt}">⚙️</button>
       <div class="physics-content">
-        <h4>Ajustes de Grafo</h4>
+        <h4 data-i18n="graph_physics_title">${titleTxt}</h4>
         <div class="physics-row">
-          <label>Modo:</label>
+          <label data-i18n="graph_mode">${modeTxt}</label>
           <div class="btn-group">
-            <button id="btn-mode-global" class="btn-mini active">Global</button>
-            <button id="btn-mode-local" class="btn-mini">Local</button>
+            <button id="btn-mode-global" class="btn-mini active" data-i18n="graph_mode_global">${globalTxt}</button>
+            <button id="btn-mode-local" class="btn-mini" data-i18n="graph_mode_local">${localTxt}</button>
           </div>
         </div>
         <div id="local-depth-row" class="physics-row hidden">
-          <label>Profundidad:</label>
+          <label data-i18n="graph_depth">${depthTxt}</label>
           <input type="range" id="slider-depth" min="1" max="4" value="1" />
-          <span id="val-depth">1 salto</span>
+          <span id="val-depth">1 ${hopTxt}</span>
         </div>
         <div class="physics-row">
-          <label>Repulsión:</label>
+          <label data-i18n="graph_charge">${chargeTxt}</label>
           <input type="range" id="slider-charge" min="-400" max="-30" value="-140" />
         </div>
         <div class="physics-row">
-          <label>Distancia:</label>
+          <label data-i18n="graph_dist">${distTxt}</label>
           <input type="range" id="slider-dist" min="30" max="250" value="85" />
         </div>
         <div class="physics-row checkbox">
-          <label><input type="checkbox" id="chk-orphans" checked /> Mostrar huérfanos</label>
+          <label><input type="checkbox" id="chk-orphans" checked /> <span data-i18n="graph_orphans">${orphansTxt}</span></label>
         </div>
         <div class="physics-row checkbox">
-          <label><input type="checkbox" id="chk-labels" checked /> Mostrar etiquetas</label>
+          <label><input type="checkbox" id="chk-labels" checked /> <span data-i18n="graph_labels">${labelsTxt}</span></label>
         </div>
       </div>
     `;
@@ -414,13 +425,16 @@ const Graph = (() => {
       if (selectedNode) {
         loadLocalGraph(selectedNode.id, localDepth);
       } else {
-        alert("Selecciona primero una nota para ver su grafo local.");
+        alert(window.I18n ? window.I18n.t('select_first_local') : "Selecciona primero una nota para ver su grafo local.");
       }
     });
 
     document.getElementById('slider-depth')?.addEventListener('input', (e) => {
       const depth = parseInt(e.target.value, 10);
-      document.getElementById('val-depth').textContent = `${depth} salto${depth > 1 ? 's' : ''}`;
+      const hopUnit = depth > 1
+        ? (window.I18n ? window.I18n.t('graph_hops') : 'saltos')
+        : (window.I18n ? window.I18n.t('graph_hop') : 'salto');
+      document.getElementById('val-depth').textContent = `${depth} ${hopUnit}`;
       if (localRootId) loadLocalGraph(localRootId, depth);
     });
 
@@ -469,7 +483,10 @@ const Graph = (() => {
   function updateStatus() {
     const countEl = document.getElementById('status-count');
     if (countEl) {
-      countEl.textContent = `${nodesData.length} nodos · ${linksData.length} aristas`;
+      const txt = window.I18n
+        ? window.I18n.t('status_nodes', { count: nodesData.length, links: linksData.length })
+        : `${nodesData.length} nodos · ${linksData.length} aristas`;
+      countEl.textContent = txt;
     }
   }
 
@@ -487,6 +504,15 @@ const Graph = (() => {
     if (simulation) {
       simulation.alpha(alpha).restart();
     }
+  }
+
+  if (window.I18n && window.I18n.onLangChange) {
+    window.I18n.onLangChange(() => {
+      updateStatus();
+      if (!selectedNode) {
+        setSelectedStatus(window.I18n.t('status_empty'));
+      }
+    });
   }
 
   return {

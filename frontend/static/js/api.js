@@ -24,7 +24,8 @@ const API = (() => {
     const res = await fetch(path, { ...opts, headers });
     if (res.status === 401 || res.status === 403) {
       // pedir key UNA vez, guardarla, y reintentar
-      const k = window.prompt('Supramemory requiere API key. Pegala aca:');
+      const promptText = window.I18n ? window.I18n.t('prompt_api_key') : 'Supramemory requiere una clave de API. Ingrésala aquí:';
+      const k = window.prompt(promptText);
       if (k) {
         setKey(k);
         return req(path, opts);  // reintento con la nueva key

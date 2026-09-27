@@ -31,19 +31,20 @@ const Explorer = (() => {
     treeContainer.innerHTML = "";
     
     // Barra de herramientas superior del explorador
+    const t = (k, p) => window.I18n ? window.I18n.t(k, p) : k;
     const toolbar = document.createElement("div");
     toolbar.className = "explorer-toolbar";
     toolbar.innerHTML = `
       <div class="explorer-title">
-        <span>VAULT</span>
+        <span>${t('vault_title')}</span>
         <div class="explorer-actions">
-          <button id="btn-new-note" title="Nueva Nota (Ctrl+N)">📄</button>
-          <button id="btn-new-folder" title="Nueva Carpeta">📁</button>
-          <button id="btn-daily-note" title="Nota de Hoy">📅</button>
-          <button id="btn-refresh-tree" title="Refrescar">🔄</button>
+          <button id="btn-new-note" title="${t('btn_new_note')}">📄</button>
+          <button id="btn-new-folder" title="${t('btn_new_folder')}">📁</button>
+          <button id="btn-daily-note" title="${t('btn_daily_note')}">📅</button>
+          <button id="btn-refresh-tree" title="${t('btn_refresh_tree')}">🔄</button>
         </div>
       </div>
-      <input type="text" id="explorer-filter" class="explorer-filter" placeholder="Filtrar archivos..." />
+      <input type="text" id="explorer-filter" class="explorer-filter" placeholder="${t('filter_files')}" />
     `;
     treeContainer.appendChild(toolbar);
 
@@ -161,7 +162,8 @@ const Explorer = (() => {
   }
 
   async function promptNewNote() {
-    const title = prompt("Título de la nueva nota:");
+    const t = (k, p) => window.I18n ? window.I18n.t(k, p) : k;
+    const title = prompt(t('prompt_new_note'));
     if (!title || !title.trim()) return;
     try {
       const note = await API.createNote({
@@ -173,18 +175,19 @@ const Explorer = (() => {
       setActive(note.id);
       if (onSelectNoteCallback) onSelectNoteCallback(note);
     } catch (e) {
-      alert(`Error creando nota: ${e.message}`);
+      alert(`Error: ${e.message}`);
     }
   }
 
   async function promptNewFolder() {
-    const folder = prompt("Nombre de la carpeta (ej. Proyectos o Trabajo/2026):");
+    const t = (k, p) => window.I18n ? window.I18n.t(k, p) : k;
+    const folder = prompt(t('prompt_new_folder'));
     if (!folder || !folder.trim()) return;
     try {
       await API.createFolder(folder.trim());
       await loadTree();
     } catch (e) {
-      alert(`Error creando carpeta: ${e.message}`);
+      alert(`Error: ${e.message}`);
     }
   }
 
@@ -195,11 +198,12 @@ const Explorer = (() => {
       setActive(res.note.id);
       if (onSelectNoteCallback) onSelectNoteCallback(res.note);
     } catch (e) {
-      alert(`Error abriendo nota diaria: ${e.message}`);
+      alert(`Error: ${e.message}`);
     }
   }
 
   function showItemMenu(e, item) {
+    const t = (k, p) => window.I18n ? window.I18n.t(k, p) : k;
     const existing = document.getElementById("tree-context-menu");
     if (existing) existing.remove();
 
@@ -210,8 +214,8 @@ const Explorer = (() => {
     menu.style.top = `${e.pageY}px`;
 
     menu.innerHTML = `
-      <div class="menu-item" id="menu-rename">✏️ Renombrar (Safe Rename)</div>
-      <div class="menu-item danger" id="menu-delete">🗑️ Eliminar</div>
+      <div class="menu-item" id="menu-rename">${t('menu_rename')}</div>
+      <div class="menu-item danger" id="menu-delete">${t('menu_delete')}</div>
     `;
     document.body.appendChild(menu);
 
@@ -219,26 +223,26 @@ const Explorer = (() => {
     setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 10);
 
     menu.querySelector("#menu-rename")?.addEventListener("click", async () => {
-      const newTitle = prompt("Nuevo título para la nota:", item.title || item.name);
+      const newTitle = prompt(t('prompt_rename_note'), item.title || item.name);
       if (!newTitle || newTitle.trim() === item.title) return;
       try {
         const res = await API.renameNote(item.id, newTitle.trim());
-        alert(`Nota renombrada exitosamente. Se actualizaron ${res.updated_links_count} wikilinks en el vault.`);
         await loadTree();
         if (onSelectNoteCallback) onSelectNoteCallback(await API.getNote(res.new_id));
       } catch (err) {
-        alert(`Error al renombrar: ${err.message}`);
+        alert(`Error: ${err.message}`);
       }
     });
 
     menu.querySelector("#menu-delete")?.addEventListener("click", async () => {
-      if (!confirm(`¿Eliminar permanentemente la nota "${item.title || item.name}"?`)) return;
+      const confirmMsg = t('confirm_delete_note', { title: item.title || item.name });
+      if (!confirm(confirmMsg)) return;
       try {
         await API.deleteNote(item.id);
         await loadTree();
         if (onSelectNoteCallback) onSelectNoteCallback(null);
       } catch (err) {
-        alert(`Error eliminando nota: ${err.message}`);
+        alert(`Error: ${err.message}`);
       }
     });
   }
@@ -250,6 +254,14 @@ const Explorer = (() => {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  if (window.I18n && window.I18n.onLangChange) {
+    window.I18n.onLangChange(() => {
+      if (treeData) {
+        renderTree(treeData);
+      }
+    });
   }
 
   return {

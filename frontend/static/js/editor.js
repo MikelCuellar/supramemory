@@ -36,32 +36,47 @@ const Editor = (() => {
 
   function renderEditor() {
     if (!currentNote) {
+      const emptyTitle = window.I18n ? window.I18n.t('editor_empty_title') : 'Selecciona o crea una nota';
+      const emptyDesc = window.I18n ? window.I18n.t('editor_empty_desc') : 'Usa el explorador a la izquierda o haz clic en cualquier nodo del grafo.';
+      const dailyBtn = window.I18n ? window.I18n.t('btn_open_daily') : '📅 Abrir Nota de Hoy';
       container.innerHTML = `
         <div class="editor-empty">
           <div class="empty-icon">🧠</div>
-          <h3>Selecciona o crea una nota</h3>
-          <p>Usa el explorador a la izquierda o pulsa en cualquier nodo del grafo.</p>
+          <h3>${emptyTitle}</h3>
+          <p>${emptyDesc}</p>
           <div class="empty-actions">
-            <button onclick="Explorer.openDailyNote()">📅 Abrir Nota de Hoy</button>
+            <button onclick="Explorer.openDailyNote()">${dailyBtn}</button>
           </div>
         </div>
       `;
       return;
     }
 
+    const titlePlaceholder = window.I18n ? window.I18n.t('editor_title_placeholder') : 'Título de la nota...';
+    const savedStatus = window.I18n ? window.I18n.t('editor_saved_status') : 'Guardado ✓';
+    const modeEdit = window.I18n ? window.I18n.t('btn_mode_edit') : 'Solo Editor';
+    const modeSplit = window.I18n ? window.I18n.t('btn_mode_split') : 'Doble Panel (Split)';
+    const modePreview = window.I18n ? window.I18n.t('btn_mode_preview') : 'Solo Vista Previa';
+    const localGraphTitle = window.I18n ? window.I18n.t('btn_local_graph_title') : 'Ver Grafo Local';
+    const localGraphTxt = window.I18n ? window.I18n.t('btn_local_graph') : '🕸️ Grafo Local';
+    const textareaPlaceholder = window.I18n ? window.I18n.t('editor_textarea_placeholder') : 'Escribe en Markdown con [[wikilinks]], #tags y callouts...';
+    const inspBacklinks = window.I18n ? window.I18n.t('insp_backlinks') : 'Backlinks';
+    const inspUnlinked = window.I18n ? window.I18n.t('insp_unlinked') : 'Menciones No Enlazadas';
+    const inspOutgoing = window.I18n ? window.I18n.t('insp_outgoing') : 'Enlaces Salientes';
+
     container.innerHTML = `
       <div class="note-editor-wrap">
         <!-- Top Toolbar del Editor -->
         <div class="editor-header">
-          <input type="text" id="note-title-input" class="note-title-input" value="${escapeAttr(currentNote.title)}" placeholder="Título de la nota..." />
+          <input type="text" id="note-title-input" class="note-title-input" value="${escapeAttr(currentNote.title)}" placeholder="${titlePlaceholder}" />
           <div class="editor-controls">
-            <span id="save-status" class="save-status">Guardado ✓</span>
+            <span id="save-status" class="save-status">${savedStatus}</span>
             <div class="view-mode-buttons">
-              <button class="mode-btn ${viewMode === 'edit' ? 'active' : ''}" data-mode="edit" title="Solo Editor">✏️</button>
-              <button class="mode-btn ${viewMode === 'split' ? 'active' : ''}" data-mode="split" title="Doble Panel (Split)">◫</button>
-              <button class="mode-btn ${viewMode === 'preview' ? 'active' : ''}" data-mode="preview" title="Solo Vista Previa">👁️</button>
+              <button class="mode-btn ${viewMode === 'edit' ? 'active' : ''}" data-mode="edit" title="${modeEdit}">✏️</button>
+              <button class="mode-btn ${viewMode === 'split' ? 'active' : ''}" data-mode="split" title="${modeSplit}">◫</button>
+              <button class="mode-btn ${viewMode === 'preview' ? 'active' : ''}" data-mode="preview" title="${modePreview}">👁️</button>
             </div>
-            <button id="btn-local-graph" class="btn-tool" title="Ver Grafo Local">🕸️ Grafo Local</button>
+            <button id="btn-local-graph" class="btn-tool" title="${localGraphTitle}">${localGraphTxt}</button>
           </div>
         </div>
 
@@ -84,7 +99,7 @@ const Editor = (() => {
         <!-- Contenedor Principal (Split / Edit / Preview) -->
         <div class="editor-split-container mode-${viewMode}">
           <div class="editor-pane">
-            <textarea id="note-content-area" class="note-textarea" placeholder="Escribe en Markdown con [[wikilinks]], #tags y callouts...">${escapeHtml(currentNote.content)}</textarea>
+            <textarea id="note-content-area" class="note-textarea" placeholder="${textareaPlaceholder}">${escapeHtml(currentNote.content)}</textarea>
             <!-- Dropdown Autocompletado Omni-Suggest -->
             <div id="omni-suggest" class="omni-suggest hidden"></div>
           </div>
@@ -96,9 +111,9 @@ const Editor = (() => {
         <!-- Inspector Inferior: Backlinks, Menciones No Enlazadas & Outgoing -->
         <div class="editor-inspector">
           <div class="inspector-tabs">
-            <button class="insp-tab active" data-insp="backlinks">Backlinks (<span id="backlinks-count">0</span>)</button>
-            <button class="insp-tab" data-insp="unlinked">Menciones No Enlazadas (<span id="unlinked-count">0</span>)</button>
-            <button class="insp-tab" data-insp="outgoing">Enlaces Salientes</button>
+            <button class="insp-tab active" data-insp="backlinks">${inspBacklinks} (<span id="backlinks-count">0</span>)</button>
+            <button class="insp-tab" data-insp="unlinked">${inspUnlinked} (<span id="unlinked-count">0</span>)</button>
+            <button class="insp-tab" data-insp="outgoing">${inspOutgoing}</button>
           </div>
           <div class="inspector-content">
             <div id="insp-panel-backlinks" class="insp-panel active"></div>
@@ -127,7 +142,7 @@ const Editor = (() => {
         const res = await API.renameNote(currentNote.id, newTitle);
         currentNote.id = res.new_id;
         currentNote.title = res.new_title;
-        setSaveStatus("Renombrado ✓");
+        setSaveStatus(window.I18n ? window.I18n.t('editor_renamed_status') : "Renombrado ✓");
         Explorer.loadTree();
         Explorer.setActive(res.new_id);
         preloadNotesIndex();
@@ -453,7 +468,7 @@ const Editor = (() => {
   }
 
   function triggerAutoSave() {
-    setSaveStatus("Guardando...");
+    setSaveStatus(window.I18n ? window.I18n.t('editor_saving_status') : "Guardando...");
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       const textarea = document.getElementById("note-content-area");
@@ -462,14 +477,14 @@ const Editor = (() => {
       currentNote.content = content;
       try {
         await API.updateNote(currentNote.id, { content });
-        setSaveStatus("Guardado ✓");
+        setSaveStatus(window.I18n ? window.I18n.t('editor_saved_status') : "Guardado ✓");
         await Promise.all([
           fetchServerRendered(currentNote.id),
           loadBacklinksAndMentions(currentNote.id)
         ]);
         if (onNoteUpdatedCallback) onNoteUpdatedCallback(currentNote);
       } catch (e) {
-        setSaveStatus(`Error guardando: ${e.message}`);
+        setSaveStatus(`Error: ${e.message}`);
       }
     }, 600);
   }
@@ -488,6 +503,12 @@ const Editor = (() => {
 
     if (!backlinksPanel || !unlinkedPanel) return;
 
+    const noBacklinksTxt = window.I18n ? window.I18n.t('no_backlinks') : 'No hay backlinks hacia esta nota.';
+    const noUnlinkedTxt = window.I18n ? window.I18n.t('no_unlinked') : 'No se encontraron menciones sin enlazar.';
+    const noOutgoingTxt = window.I18n ? window.I18n.t('no_outgoing') : 'Esta nota no enlaza a otras notas.';
+    const linkBtnTxt = window.I18n ? window.I18n.t('btn_link_mention') : '🔗 Enlazar';
+    const linkedBtnTxt = window.I18n ? window.I18n.t('btn_linked_mention') : 'Enlazado ✓';
+
     try {
       const [rendered, unlinkedData] = await Promise.all([
         API.getRendered(noteId),
@@ -504,7 +525,7 @@ const Editor = (() => {
             <a href="#" class="mention-title" data-target="${escapeAttr(b)}">${escapeHtml(b)}</a>
           </div>
         </div>
-      `).join("") : '<div class="muted small">No hay backlinks hacia esta nota.</div>';
+      `).join("") : `<div class="muted small">${noBacklinksTxt}</div>`;
 
       backlinksPanel.querySelectorAll("[data-target]").forEach(a => {
         a.addEventListener("click", (e) => {
@@ -522,11 +543,11 @@ const Editor = (() => {
           <div class="mention-header">
             <span class="mention-icon">💡</span>
             <strong>${escapeHtml(u.source_title)}</strong>
-            <button class="btn-link-mention" data-source="${escapeAttr(u.source_id)}" data-target="${escapeAttr(u.match_text)}">🔗 Enlazar</button>
+            <button class="btn-link-mention" data-source="${escapeAttr(u.source_id)}" data-target="${escapeAttr(u.match_text)}">${linkBtnTxt}</button>
           </div>
           <div class="mention-snippet">${escapeHtml(u.snippet)}</div>
         </div>
-      `).join("") : '<div class="muted small">No se encontraron menciones sin enlazar.</div>';
+      `).join("") : `<div class="muted small">${noUnlinkedTxt}</div>`;
 
       unlinkedPanel.querySelectorAll(".btn-link-mention").forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -534,7 +555,7 @@ const Editor = (() => {
           const targetTitle = btn.dataset.target;
           try {
             await API.linkMention(noteId, sourceId, targetTitle);
-            btn.textContent = "Enlazado ✓";
+            btn.textContent = linkedBtnTxt;
             btn.disabled = true;
             if (sourceId === currentNote.id) {
               const fresh = await API.getNote(currentNote.id);
@@ -546,7 +567,7 @@ const Editor = (() => {
             await loadBacklinksAndMentions(noteId);
             if (onNoteUpdatedCallback) onNoteUpdatedCallback(currentNote);
           } catch (err) {
-            alert(`Error enlazando: ${err.message}`);
+            alert(`Error: ${err.message}`);
           }
         });
       });
@@ -558,7 +579,7 @@ const Editor = (() => {
           <span class="mention-icon">↗️</span>
           <a href="#" data-target="${escapeAttr(l)}">${escapeHtml(l)}</a>
         </div>
-      `).join("") : '<div class="muted small">Esta nota no enlaza a otras notas.</div>';
+      `).join("") : `<div class="muted small">${noOutgoingTxt}</div>`;
 
       outgoingPanel.querySelectorAll("[data-target]").forEach(a => {
         a.addEventListener("click", (e) => {
@@ -599,6 +620,14 @@ const Editor = (() => {
 
   function escapeAttr(s) {
     return String(s).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+  }
+
+  if (window.I18n && window.I18n.onLangChange) {
+    window.I18n.onLangChange(() => {
+      if (!currentNote && container) {
+        renderEditor();
+      }
+    });
   }
 
   return {

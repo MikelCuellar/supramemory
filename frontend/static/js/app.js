@@ -243,9 +243,12 @@ async function loadTokens() {
   try {
     const tokens = await Tokens.list(showRevoked);
     if (!tokens.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="muted center">No hay tokens todavía. Creá uno arriba.</td></tr>';
+      const emptyMsg = window.I18n ? window.I18n.t('tokens_empty') : 'No hay tokens todavía. Crea uno arriba.';
+      tbody.innerHTML = `<tr><td colspan="7" class="muted center">${emptyMsg}</td></tr>`;
       return;
     }
+    const btnRevokeTxt = window.I18n ? window.I18n.t('btn_revoke') : 'Revocar';
+    const btnDeleteTxt = window.I18n ? window.I18n.t('btn_delete') : 'Borrar';
     tbody.innerHTML = tokens.map(t => {
       const scopes = t.scopes.split(',').map(s =>
         `<span class="scope-tag">${s.trim()}</span>`
@@ -254,9 +257,9 @@ async function loadTokens() {
         ? '<span class="status-revoked">revoked</span>'
         : '<span class="status-active">active</span>';
       const actions = t.revoked
-        ? `<button class="btn-mini danger" onclick="deleteToken('${escapeAttr(t.name)}')">Borrar</button>`
-        : `<button class="btn-mini" onclick="revokeToken('${escapeAttr(t.name)}')">Revocar</button>
-           <button class="btn-mini danger" onclick="deleteToken('${escapeAttr(t.name)}')">Borrar</button>`;
+        ? `<button class="btn-mini danger" onclick="deleteToken('${escapeAttr(t.name)}')">${btnDeleteTxt}</button>`
+        : `<button class="btn-mini" onclick="revokeToken('${escapeAttr(t.name)}')">${btnRevokeTxt}</button>
+           <button class="btn-mini danger" onclick="deleteToken('${escapeAttr(t.name)}')">${btnDeleteTxt}</button>`;
       return `<tr>
         <td><strong>${escapeHtml(t.name)}</strong></td>
         <td>${scopes}</td>
@@ -273,7 +276,8 @@ async function loadTokens() {
 }
 
 async function revokeToken(name) {
-  if (!confirm(`Revocar token "${name}"? Queda en la DB pero no se puede usar más.`)) return;
+  const msg = window.I18n ? window.I18n.t('confirm_revoke', { name }) : `¿Revocar el token "${name}"?`;
+  if (!confirm(msg)) return;
   try {
     await Tokens.revoke(name);
     await loadTokens();
@@ -283,7 +287,8 @@ async function revokeToken(name) {
 }
 
 async function deleteToken(name) {
-  if (!confirm(`Borrar token "${name}" permanentemente? Esta acción no se puede deshacer.`)) return;
+  const msg = window.I18n ? window.I18n.t('confirm_delete', { name }) : `¿Eliminar el token "${name}" permanentemente?`;
+  if (!confirm(msg)) return;
   try {
     await Tokens.delete(name);
     await loadTokens();
@@ -322,7 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('copy-token')?.addEventListener('click', () => {
     const text = document.getElementById('token-plain').textContent;
     navigator.clipboard.writeText(text);
-    alert('Token copiado al portapapeles');
+    const alertMsg = window.I18n ? window.I18n.t('token_copied_alert') : 'Token copiado al portapapeles';
+    alert(alertMsg);
   });
 
   document.getElementById('token-result-close')?.addEventListener('click', () => {
@@ -330,6 +336,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('show-revoked')?.addEventListener('change', loadTokens);
+
+  if (window.I18n && window.I18n.onLangChange) {
+    window.I18n.onLangChange(() => {
+      loadTokens();
+    });
+  }
 });
 
 window.loadTokens = loadTokens;

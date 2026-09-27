@@ -5,40 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Supramemory — Neural Knowledge Graph</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%23a8e10c'/><circle cx='50' cy='50' r='22' fill='%230a0a0f'/><circle cx='50' cy='50' r='10' fill='%23c7ff3a'/></svg>">
-  <link rel="stylesheet" href="/static/css/theme.css?v=0.4.1">
-  <link rel="stylesheet" href="/static/css/graph.css?v=0.4.1">
-  <link rel="stylesheet" href="/static/css/panels.css?v=0.4.1">
+  <link rel="stylesheet" href="/static/css/theme.css?v=0.4.2">
+  <link rel="stylesheet" href="/static/css/graph.css?v=0.4.2">
+  <link rel="stylesheet" href="/static/css/panels.css?v=0.4.2">
 </head>
 <body>
   <div id="app">
     <!-- Top bar -->
     <header id="topbar">
       <div class="brand">
-        <button id="toggle-sidebar-btn" class="icon-btn" title="Mostrar/Ocultar Explorador de Archivos">📁</button>
+        <button id="toggle-sidebar-btn" class="icon-btn" data-i18n-title="toggle_sidebar" title="Mostrar/Ocultar Explorador de Archivos">📁</button>
         <span class="brand-dot"></span>
-        <span class="brand-name">Supramemory</span>
+        <span class="brand-name" data-i18n="brand">Supramemory</span>
       </div>
       <nav id="tabs" class="tabs">
-        <button class="tab active" data-tab="graph">🕸️ Grafo</button>
-        <button class="tab" data-tab="editor">📝 Editor</button>
-        <button class="tab" data-tab="tokens">🔑 API Tokens</button>
-        <button class="tab" data-tab="docs">📚 Docs</button>
+        <button class="tab active" data-tab="graph" data-i18n="tab_graph">🕸️ Grafo</button>
+        <button class="tab" data-tab="editor" data-i18n="tab_editor">📝 Editor</button>
+        <button class="tab" data-tab="tokens" data-i18n="tab_tokens">🔑 API Tokens</button>
+        <button class="tab" data-tab="docs" data-i18n="tab_docs">📚 Docs</button>
       </nav>
       <div class="search-wrap">
         <input
           id="search-input"
           type="text"
-          placeholder="Buscar nodo, tag, texto... (Ctrl+K)"
+          data-i18n-placeholder="search_placeholder"
+          placeholder="Buscar nodo, etiqueta, texto... (Ctrl+K)"
           autocomplete="off"
         />
       </div>
       <div class="filters">
         <select id="filter-source">
-          <option value="">Todos los orígenes</option>
+          <option value="" data-i18n="filter_all_sources">Todos los orígenes</option>
         </select>
         <select id="filter-tag">
-          <option value="">Todos los tags</option>
+          <option value="" data-i18n="filter_all_tags">Todas las etiquetas</option>
         </select>
+      </div>
+      <div class="lang-selector">
+        <button id="lang-btn" class="lang-btn" type="button" title="Seleccionar idioma / Select language">
+          <span id="current-lang-flag">🇲🇽</span>
+          <span id="current-lang-code">ES</span>
+          <span class="lang-caret">▾</span>
+        </button>
+        <div id="lang-dropdown" class="lang-dropdown hidden">
+          <button type="button" class="lang-option" data-lang="es">
+            <span class="flag">🇲🇽</span> <span class="name">Español</span>
+          </button>
+          <button type="button" class="lang-option" data-lang="en">
+            <span class="flag">🇺🇸</span> <span class="name">English</span>
+          </button>
+          <button type="button" class="lang-option" data-lang="fr">
+            <span class="flag">🇫🇷</span> <span class="name">Français</span>
+          </button>
+          <button type="button" class="lang-option" data-lang="sv">
+            <span class="flag">🇸🇪</span> <span class="name">Svenska</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -57,19 +79,19 @@
             <svg id="graph-svg">
               <g id="graph-root"></g>
             </svg>
-            <button id="theme-toggle" title="Cambiar tema (claro/oscuro)">&#9788;</button>
+            <button id="theme-toggle" data-i18n-title="theme_toggle" title="Cambiar tema (claro/oscuro)">&#9788;</button>
             <div id="zoom-controls">
-              <button id="zoom-in" title="Acercar (zoom in)">+</button>
-              <button id="zoom-out" title="Alejar (zoom out)">&minus;</button>
-              <button id="zoom-reset" title="Resetear vista">&#8634;</button>
+              <button id="zoom-in" data-i18n-title="zoom_in" title="Acercar (zoom in)">+</button>
+              <button id="zoom-out" data-i18n-title="zoom_out" title="Alejar (zoom out)">&minus;</button>
+              <button id="zoom-reset" data-i18n-title="zoom_reset" title="Restablecer vista">&#8634;</button>
             </div>
           </div>
           <aside id="side-panel" class="collapsed">
-            <button id="close-panel" title="Cerrar">×</button>
+            <button id="close-panel" data-i18n-title="close" title="Cerrar">×</button>
             <div id="panel-content"></div>
           </aside>
           <div id="legend">
-            <div class="legend-title">Leyenda</div>
+            <div class="legend-title" data-i18n="legend_title">Leyenda</div>
             <div id="legend-items"></div>
           </div>
         </main>
@@ -83,42 +105,50 @@
         <main id="tab-tokens" class="tab-panel">
           <div class="panel-container">
             <div class="panel-header">
-              <h2>API Tokens</h2>
-              <p class="muted">Tokens para que los agentes IA accedan al grafo de Supramemory. Cada token tiene nombre, scopes y expiración opcional.</p>
+              <h2 data-i18n="tokens_title">API Tokens</h2>
+              <p class="muted" data-i18n="tokens_desc">Tokens para que los agentes de IA accedan al grafo de Supramemory. Cada token tiene nombre, permisos y fecha de expiración opcional.</p>
             </div>
 
             <div class="panel-section">
-              <h3>Crear nuevo token</h3>
+              <h3 data-i18n="token_create_title">Crear nuevo token</h3>
               <form id="token-form" class="form-row">
-                <input id="token-name" placeholder="Nombre del token (ej: Hermes Agent)" required>
+                <input id="token-name" data-i18n-placeholder="token_name_placeholder" placeholder="Nombre del token (ej: Agente Hermes)" required>
                 <select id="token-scopes" multiple size="3">
-                  <option value="read" selected>read — GET endpoints</option>
-                  <option value="write">write — POST/PATCH/DELETE</option>
-                  <option value="admin">admin — todo + gestión tokens</option>
+                  <option value="read" selected data-i18n="token_scope_read">read — endpoints GET</option>
+                  <option value="write" data-i18n="token_scope_write">write — POST/PATCH/DELETE</option>
+                  <option value="admin" data-i18n="token_scope_admin">admin — todo + gestión de tokens</option>
                 </select>
-                <input id="token-expiry" type="datetime-local" placeholder="Expiración (opcional)">
-                <button type="submit">Crear token</button>
+                <input id="token-expiry" type="datetime-local" data-i18n-placeholder="token_expiry_placeholder" placeholder="Expiración (opcional)">
+                <button type="submit" data-i18n="token_btn_create">Crear token</button>
               </form>
               <div id="token-result" class="hidden">
-                <h4>Token generado — guardalo ya, no se puede volver a ver</h4>
+                <h4 data-i18n="token_generated_title">Token generado — guárdalo ahora, no podrás volver a verlo</h4>
                 <pre id="token-plain"></pre>
-                <button id="copy-token">Copiar</button>
-                <button id="token-result-close">Cerrar</button>
+                <button id="copy-token" data-i18n="token_btn_copy">Copiar</button>
+                <button id="token-result-close" data-i18n="token_btn_close">Cerrar</button>
               </div>
             </div>
 
             <div class="panel-section">
-              <h3>Tokens existentes</h3>
+              <h3 data-i18n="tokens_table_title">Tokens existentes</h3>
               <table id="tokens-table">
                 <thead>
-                  <tr><th>Nombre</th><th>Scopes</th><th>Creado</th><th>Último uso</th><th>Expira</th><th>Estado</th><th>Acciones</th></tr>
+                  <tr>
+                    <th data-i18n="th_name">Nombre</th>
+                    <th data-i18n="th_scopes">Permisos (Scopes)</th>
+                    <th data-i18n="th_created">Creado</th>
+                    <th data-i18n="th_last_used">Último uso</th>
+                    <th data-i18n="th_expires">Expira</th>
+                    <th data-i18n="th_status">Estado</th>
+                    <th data-i18n="th_actions">Acciones</th>
+                  </tr>
                 </thead>
                 <tbody id="tokens-tbody">
-                  <tr><td colspan="7" class="muted center">Cargando...</td></tr>
+                  <tr><td colspan="7" class="muted center" data-i18n="tokens_loading">Cargando...</td></tr>
                 </tbody>
               </table>
               <label class="checkbox-row">
-                <input type="checkbox" id="show-revoked"> Mostrar revocados/borrados
+                <input type="checkbox" id="show-revoked"> <span data-i18n="chk_show_revoked">Mostrar revocados / eliminados</span>
               </label>
             </div>
           </div>
@@ -153,22 +183,30 @@
     <footer id="statusbar">
       <span id="status-count">0 nodos</span>
       <span class="sep">·</span>
-      <span id="status-selected">Nada seleccionado</span>
+      <span id="status-selected" data-i18n="status_empty">Nada seleccionado</span>
       <span class="sep">·</span>
-      <span class="hint">Click: seleccionar · Doble-click: fijar/liberar · Rueda: zoom · Drag: pan</span>
+      <span class="hint" data-i18n="status_hint">Clic: seleccionar · Doble clic: fijar/liberar · Rueda: zoom · Arrastrar: mover</span>
     </footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
-  <script src="/static/js/api.js?v=0.4.1"></script>
-  <script src="/static/js/tokens.js?v=0.4.1"></script>
-  <script src="/static/js/agents.js?v=0.4.1"></script>
-  <script src="/static/js/filters.js?v=0.4.1"></script>
-  <script src="/static/js/graph.js?v=0.4.1"></script>
-  <script src="/static/js/explorer.js?v=0.4.1"></script>
-  <script src="/static/js/editor.js?v=0.4.1"></script>
-  <script src="/static/js/tabs.js?v=0.4.1"></script>
-  <script src="/static/js/docs.js?v=0.4.1"></script>
-  <script src="/static/js/app.js?v=0.4.1"></script>
+  <script src="/static/js/i18n.js?v=0.4.2"></script>
+  <script src="/static/js/api.js?v=0.4.2"></script>
+  <script src="/static/js/tokens.js?v=0.4.2"></script>
+  <script src="/static/js/agents.js?v=0.4.2"></script>
+  <script src="/static/js/filters.js?v=0.4.2"></script>
+  <script src="/static/js/graph.js?v=0.4.2"></script>
+  <script src="/static/js/explorer.js?v=0.4.2"></script>
+  <script src="/static/js/editor.js?v=0.4.2"></script>
+  <script src="/static/js/tabs.js?v=0.4.2"></script>
+  <script src="/static/js/docs.js?v=0.4.2"></script>
+  <script src="/static/js/app.js?v=0.4.2"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.I18n) {
+        window.I18n.initUI();
+      }
+    });
+  </script>
 </body>
 </html>
