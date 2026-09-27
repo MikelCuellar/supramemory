@@ -38,6 +38,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    """Inyecta cabeceras HTTP de seguridad en todas las respuestas."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 # Routers
 app.include_router(health.router)
 app.include_router(notes.router)
@@ -50,8 +62,10 @@ app.include_router(tokens.router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Indexa vault al boot."""
+    """Indexa vault al boot y verifica seguridad de configuración."""
     log.info("Supramemory starting up")
+    if settings.api_key == "changeme":
+        log.warning("⚠️ SECURITY WARNING: Master API_KEY está configurado con el valor por defecto 'changeme'. Cambialo en producción!")
     try:
         result = ingest_local_vault()
         log.info("Initial vault ingest: %s", result)

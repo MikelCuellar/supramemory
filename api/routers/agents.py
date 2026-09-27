@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from api.core.models import ContextItem, ContextResponse
-from api.core.security import require_write
+from api.core.security import require_read, require_write
 from api.services import notes as notes_svc
 from api.services import search as search_svc
 from api.services.markdown import extract_tags, extract_wikilinks
@@ -109,7 +109,7 @@ async def consume(
     topics: list[str] = Query(default=[], description="Topics a buscar"),
     q: str | None = Query(default=None, description="Query libre adicional"),
     limit: int = Query(default=10, le=50),
-    auth: dict = Depends(require_write),
+    auth: dict = Depends(require_read),
 ):
     """Agente consulta conocimiento estructurado.
 
@@ -165,7 +165,7 @@ async def consume(
 async def digest(
     topics: list[str] = Query(default=[]),
     limit: int = Query(default=3, le=10),
-    auth: dict = Depends(require_write),
+    auth: dict = Depends(require_read),
 ):
     """Resumen condensado para inyectar en prompt de agente.
 

@@ -65,26 +65,57 @@ def get_vault_tree() -> dict:
     return _build_tree(root_path)
 
 
+ALLOWED_ATTACHMENT_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg",
+    ".pdf", ".mp3", ".wav", ".m4a", ".ogg",
+    ".txt", ".csv", ".json", ".md"
+}
+
+
+def _ensure_safe_path(target_path: Path, base_dir: Path) -> Path:
+    """Valida que target_path se encuentre dentro de base_dir para evitar Path Traversal."""
+    try:
+        resolved_target = target_path.resolve()
+        resolved_base = base_dir.resolve()
+        if not resolved_target.is_relative_to(resolved_base):
+            raise ValueError("Ruta inválida: Intento de Path Traversal detectado fuera del vault")
+        return resolved_target
+    except Exception as e:
+        if isinstance(e, ValueError):
+            raise
+        raise ValueError(f"Ruta inválida o no permitida: {str(e)}")
+
+
 def create_folder(folder_path: str) -> dict:
-    """Crea una carpeta dentro del vault."""
+    """Crea una carpeta dentro del vault de forma segura."""
     clean_path = folder_path.strip("/\\")
+    if ".." in clean_path.split("/") or ".." in clean_path.split("\\"):
+        raise ValueError("Ruta inválida: '..' no está permitido en el nombre de la carpeta")
+
     target_dir = settings.vault_path / clean_path
+    _ensure_safe_path(target_dir, settings.vault_path)
     target_dir.mkdir(parents=True, exist_ok=True)
     return {"status": "created", "path": clean_path}
 
 
 def move_note(note_id: str, target_folder: str) -> dict:
-    """Mueve una nota existente a otra carpeta dentro del vault."""
+    """Mueve una nota existente a otra carpeta dentro del vault de forma segura."""
     note = get_note(note_id)
     if not note:
         raise ValueError(f"Note '{note_id}' not found")
 
     old_path = Path(note["path"]) if note.get("path") else (settings.vault_path / f"{note_id}.md")
     clean_folder = target_folder.strip("/\\")
+    if ".." in clean_folder.split("/") or ".." in clean_folder.split("\\"):
+        raise ValueError("Ruta inválida: '..' no está permitido en la carpeta de destino")
+
     target_dir = settings.vault_path / clean_folder if clean_folder else settings.vault_path
+    _ensure_safe_path(target_dir, settings.vault_path)
     target_dir.mkdir(parents=True, exist_ok=True)
 
     new_path = target_dir / old_path.name
+    _ensure_safe_path(new_path, settings.vault_path)
+
     if old_path.exists() and old_path != new_path:
         shutil.move(str(old_path), str(new_path))
 
@@ -153,18 +184,27 @@ def get_or_create_daily_note() -> tuple[dict, bool]:
 
 
 def save_attachment(filename: str, file_bytes: bytes) -> dict:
-    """Guarda un archivo adjunto (imagen, audio, pdf) en /vault/attachments/."""
+    """Guarda un archivo adjunto (imagen, audio, pdf) en /vault/attachments/ de forma segura."""
     attach_dir = settings.vault_path / "attachments"
     attach_dir.mkdir(parents=True, exist_ok=True)
 
     clean_filename = Path(filename).name
+    suffix = Path(clean_filename).suffix.lower()
+
+    if not suffix or suffix not in ALLOWED_ATTACHMENT_EXTENSIONS:
+        raise ValueError(
+            f"Tipo de archivo '{suffix}' no permitido. Permitidos: {sorted(list(ALLOWED_ATTACHMENT_EXTENSIONS))}"
+        )
+
     # Prevenir sobreescritura accidental agregando sufijo si ya existe
     target_file = attach_dir / clean_filename
+    _ensure_safe_path(target_file, attach_dir)
+
     stem = target_file.stem
-    suffix = target_file.suffix
     counter = 1
     while target_file.exists():
         target_file = attach_dir / f"{stem}_{counter}{suffix}"
+        _ensure_safe_path(target_file, attach_dir)
         counter += 1
 
     target_file.write_bytes(file_bytes)

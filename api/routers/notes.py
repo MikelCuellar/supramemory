@@ -64,8 +64,11 @@ async def get_daily_note():
 
 @router.post("/folders", dependencies=[Depends(require_write)])
 async def create_folder(payload: CreateFolderRequest):
-    """Crea una carpeta dentro del vault."""
-    return vault_svc.create_folder(payload.path)
+    """Crea una carpeta dentro del vault de forma segura."""
+    try:
+        return vault_svc.create_folder(payload.path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/move", dependencies=[Depends(require_write)])
@@ -74,14 +77,18 @@ async def move_note(payload: MoveNoteRequest):
     try:
         return vault_svc.move_note(payload.note_id, payload.target_folder)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        status_code = 404 if "not found" in str(e).lower() else 400
+        raise HTTPException(status_code=status_code, detail=str(e))
 
 
 @router.post("/attachments", dependencies=[Depends(require_write)])
 async def upload_attachment(file: UploadFile = File(...)):
     """Sube un archivo adjunto (imagen, audio, pdf) a /vault/attachments/."""
-    content = await file.read()
-    return vault_svc.save_attachment(file.filename, content)
+    try:
+        content = await file.read()
+        return vault_svc.save_attachment(file.filename, content)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("", response_model=Note, status_code=201, dependencies=[Depends(require_write)])

@@ -11,6 +11,12 @@ FORBIDDEN_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Tablas restringidas (credenciales y metadatos internos de SQLite)
+FORBIDDEN_TABLES = re.compile(
+    r"\b(api_tokens|sqlite_master|sqlite_schema|sqlite_temp_master|sqlite_sequence)\b",
+    re.IGNORECASE,
+)
+
 
 def execute_safe_query(query_str: str, limit: int = 50) -> dict[str, Any]:
     """Ejecuta una consulta SQL de solo lectura de forma segura contra la base de datos SQLite."""
@@ -42,6 +48,10 @@ def execute_safe_query(query_str: str, limit: int = 50) -> dict[str, Any]:
     # Bloquear palabras clave peligrosas
     if FORBIDDEN_KEYWORDS.search(cleaned):
         return {"columns": [], "rows": [], "error": "Operación no permitida: solo consultas de lectura"}
+
+    # Bloquear tablas de seguridad y del sistema
+    if FORBIDDEN_TABLES.search(cleaned):
+        return {"columns": [], "rows": [], "error": "Acceso denegado: no se permite consultar tablas del sistema o credenciales"}
 
     # Forzar límite si no está presente
     if not re.search(r"\bLIMIT\s+\d+", cleaned, re.IGNORECASE):

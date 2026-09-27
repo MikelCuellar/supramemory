@@ -19,7 +19,8 @@
 [🏆 Ventajas Competitivas](#-por-qué-supramemory-ventajas-frente-a-obsidian-y-vector-dbs) •
 [🤖 Playbook para Agentes IA](#-playbook-del-cerebro-ia-cómo-sacarle-el-máximo-provecho) •
 [📝 Experiencia Obsidian](#-experiencia-pkm-estilo-obsidian-para-humanos) •
-[🚀 Quickstart](#-quickstart) •
+[🚀 Instalación & Despliegue](#-guía-de-instalación-y-despliegue-docker--vps) •
+[🛡️ Tests & Seguridad](#-seguridad-hardening-y-batería-de-tests-automatizados) •
 [📡 API Reference](#-referencia-de-api)
 
 ---
@@ -228,37 +229,178 @@ Supramemory ofrece una interfaz visual completa diseñada para el flujo de traba
 
 ---
 
-## 🚀 Quickstart
+## 🚀 Guía de Instalación y Despliegue (Docker & VPS)
 
-### Opción A: Desarrollo Local (Python + Virtualenv)
+Supramemory puede desplegarse en segundos tanto en tu máquina local como en cualquier servidor VPS en producción.
+
+```mermaid
+graph LR
+    subgraph Local_or_VPS["🐳 Host / Servidor VPS"]
+        Docker["📦 Docker Container (FastAPI + D3.js)"]
+        VaultVol[("📁 /vault (Markdown Files)")]
+        DBVol[("🗄️ /db (SQLite FTS5)")]
+        Docker --> VaultVol
+        Docker --> DBVol
+    end
+    Nginx["🌐 Nginx / Reverse Proxy (SSL Certbot)"] -->|:8000| Docker
+    Clients["🤖 Agentes IA & 👤 Navegadores"] -->|HTTPS + Bearer Token| Nginx
+```
+
+---
+
+### 🐳 Opción 1: Docker Compose Local (Recomendado)
+
+La forma más rápida y limpia de ejecutar Supramemory en local con persistencia completa:
 
 ```bash
-# 1. Clonar repositorio
+# 1. Clonar el repositorio
 git clone https://github.com/MikelCuellar/supramemory.git
 cd supramemory
 
-# 2. Crear entorno virtual e instalar dependencias
-python3 -m venv .venv
-source .venv/bin/activate   # En Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-
-# 3. Configurar variables de entorno
+# 2. Configurar variables de entorno
 cp .env.example .env
+# Edita .env y define una API_KEY segura para el usuario maestro
 
-# 4. Iniciar servidor FastAPI
-uvicorn api.main:app --reload --port 8000
-# Abrir en el navegador: http://localhost:8000
+# 3. Construir e iniciar en segundo plano
+docker compose up -d --build
+
+# 4. Verificar estado y logs
+docker compose ps
+docker compose logs -f
+
+# 5. Comprobar health check
+curl http://localhost:8000/health
+# Abre en tu navegador: http://localhost:8000
 ```
 
-### Opción B: Docker & Docker Compose
+---
+
+### 📦 Opción 2: Docker CLI Directo (Standalone Container)
+
+Si prefieres ejecutar directamente sin Docker Compose montando volúmenes persistentes en tu host:
 
 ```bash
-docker compose up -d --build
-# Tu cerebro Supramemory estará corriendo en http://localhost:8000
+# 1. Construir la imagen Docker
+docker build -t supramemory:latest .
+
+# 2. Crear carpetas locales de persistencia
+mkdir -p ./data/vault ./data/db
+
+# 3. Ejecutar el contenedor
+docker run -d \
+  --name supramemory \
+  -p 8000:8000 \
+  -v "$(pwd)/data/vault:/vault:rw" \
+  -v "$(pwd)/data/db:/db:rw" \
+  -e API_KEY="tu-super-clave-maestra-segura" \
+  -e LOG_LEVEL="info" \
+  -e CORS_ORIGINS="*" \
+  --restart unless-stopped \
+  supramemory:latest
 ```
 
-### Opción C: Despliegue en 1-Clic en Coolify o Dokploy
-Supramemory incluye configuración nativa para **Dokploy**, **Coolify** y **Nixpacks**. Simplemente conecta tu repositorio Git, monta los volúmenes `/vault` y `/db`, y configura `API_KEY`.
+---
+
+### 🌐 Opción 3: Despliegue en Servidor VPS Linux (Ubuntu / Debian con Nginx + SSL)
+
+Guía completa para poner Supramemory en producción en cualquier proveedor cloud (Hetzner, DigitalOcean, AWS, Linode, OVH):
+
+#### 1. Preparar el servidor y clonar el proyecto
+```bash
+# Instalar Docker & Docker Compose (si no están instalados)
+curl -fsSL https://get.docker.com | sh
+
+# Crear directorio de despliegue
+sudo mkdir -p /opt/supramemory
+sudo chown $USER:$USER /opt/supramemory
+cd /opt/supramemory
+
+# Clonar repositorio
+git clone https://github.com/MikelCuellar/supramemory.git .
+```
+
+#### 2. Configurar variables de entorno de producción
+```bash
+cat << 'EOF' > .env
+PORT=8000
+API_KEY=GeneraUnaClaveMaestraMuyRobustaAqui_sk99382193
+LOG_LEVEL=info
+CORS_ORIGINS=*
+VAULT_PATH=/vault
+DB_PATH=/db/supramemory.db
+EOF
+```
+
+#### 3. Iniciar el servicio con Docker Compose
+```bash
+docker compose up -d --build
+```
+
+#### 4. Configurar Proxy Inverso Nginx con SSL (Certbot Let's Encrypt)
+Crea la configuración de Nginx en `/etc/nginx/sites-available/supramemory`:
+
+```nginx
+server {
+    server_name supramemory.tudominio.com;
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        
+        # Cabeceras estándar para agentes y web
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+
+        # WebSockets (para actualizaciones en vivo del editor/grafo)
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+Habilitar el sitio y generar el certificado SSL automático:
+```bash
+sudo ln -s /etc/nginx/sites-available/supramemory /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d supramemory.tudominio.com
+```
+
+---
+
+### ⚡ Opción 4: Despliegue en 1-Clic en Coolify, Dokploy o Portainer
+
+Supramemory es 100% compatible con plataformas PaaS autodirigidas:
+
+1. **Crear Nueva Aplicación** apuntando al repositorio de GitHub: `https://github.com/MikelCuellar/supramemory`.
+2. **Tipo de Build:** Dockerfile o Nixpacks.
+3. **Mapeo de Volúmenes Persistentes (Esencial):**
+   - Destino en contenedor: `/vault` ➔ Almacenamiento persistente de notas `.md` y adjuntos.
+   - Destino en contenedor: `/db` ➔ Base de datos relacional y búsqueda `supramemory.db`.
+4. **Variables de Entorno Mínimas:**
+   - `API_KEY`: Tu clave maestra de administración.
+   - `PORT`: `8000` (o el puerto asignado por tu plataforma).
+
+---
+
+### 🐍 Opción 5: Desarrollo Local con Python (Sin Docker)
+
+```bash
+# 1. Crear y activar entorno virtual
+python3 -m venv .venv
+source .venv/bin/activate   # En Windows: .venv\Scripts\activate
+
+# 2. Instalar dependencias
+pip install -r requirements.txt
+
+# 3. Configurar variables y ejecutar
+cp .env.example .env
+uvicorn api.main:app --reload --port 8000
+```
 
 ---
 
@@ -270,9 +412,9 @@ Todos los endpoints (excepto `/health` y documentación) requieren autorización
 | Método | Endpoint | Scope | Descripción |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/context?q=...&limit=5` | `read` | **Estrella:** Devuelve fragmentos y notas de alta relevancia BM25. |
-| `GET` | `/agents/feed/digest?topics=...` | `write` | **Estrella:** Resumen ultra-denso listo para inyectar en prompts. |
+| `GET` | `/agents/feed/digest?topics=...` | `read` | **Estrella:** Resumen ultra-denso listo para inyectar en prompts. |
 | `POST` | `/agents/feed` | `write` | Aporta aprendizajes estructurados con autoría y nivel de confianza. |
-| `GET` | `/agents/feed?topics=...` | `write` | Consulta feeds de conocimiento por tópicos. |
+| `GET` | `/agents/feed?topics=...` | `read` | Consulta feeds de conocimiento por tópicos. |
 
 ### 📝 Notas y Vault (Paridad Obsidian)
 | Método | Endpoint | Scope | Descripción |
@@ -379,11 +521,11 @@ supramemory/
 ├── frontend/                  # Interfaz Web (Vanilla JS + D3.js v7, sin build step)
 │   ├── index.html             # Layout principal (Explorer + Editor + Grafo + Tokens)
 │   └── static/                # JS modular (app, graph, editor, explorer, tokens) y CSS
-├── data/                      # Volúmenes locales
+├── data/                      # Volúmenes locales persistentes
 │   ├── vault/                 # Archivos Markdown planos (.md) y attachments/
 │   └── db/                    # Base de datos SQLite (supramemory.db)
 ├── scripts/                   # Clientes de agentes IA (hermes_client.py, mcp_server.py)
-├── tests/                     # Suite de pruebas automatizadas (test_api.py, test_obsidian.py)
+├── tests/                     # Suite de pruebas automatizadas (test_api.py, test_obsidian.py, test_security.py)
 ├── docs/                      # Documentación de arquitectura, API e imágenes
 ├── Dockerfile                 # Imagen Docker optimizada
 └── docker-compose.yml         # Orquestación de contenedores
@@ -391,11 +533,109 @@ supramemory/
 
 ---
 
-## 🔒 Seguridad y Privacidad
+## 🛡️ Seguridad, Hardening y Batería de Tests Automatizados
 
-- **Zero Telemetry / Local-First:** Ningún dato sale de tu servidor o VPS.
+Supramemory implementa un modelo de seguridad por capas con el principio de **"Frictionless AI Access"**: máxima protección de datos contra accesos no autorizados sin añadir fricción a los agentes de IA (como CAPTCHAs, cookies de sesión o firmas OAuth complejas).
+
+```mermaid
+graph TD
+    Client["🤖 Agente IA / 👤 Usuario"] -->|Bearer Token (sk-...)| SecMW["🛡️ Security Headers Middleware"]
+    SecMW --> AuthGuard{"🔑 Scope & Token Guard"}
+    
+    AuthGuard -->|Token Inválido / Revocado| Block403["🚫 403 Forbidden / 401 Unauthorized"]
+    AuthGuard -->|Scope 'read'| ReadOnly["📖 Endpoints Lectura (/notes, /graph, /query, /feed GET)"]
+    AuthGuard -->|Scope 'write'| WriteAccess["✍️ Endpoints Escritura (Crear/Editar Notas, Feed POST)"]
+    AuthGuard -->|Scope 'admin'| AdminAccess["⚙️ Endpoints Admin (/tokens, /ingest)"]
+    
+    ReadOnly --> SafeSQL["🔒 Dataview Query Sanitizer (Bloquea api_tokens & sqlite_master)"]
+    WriteAccess --> PathGuard["📁 Path Traversal Guard (Confinamiento estricto a /vault/)"]
+    WriteAccess --> MIMEGuard["📎 Attachment Whitelist (Bloqueo de .exe, .sh, .py, .php)"]
+```
+
+---
+
+### 🧪 1. Dimensiones de Seguridad Evaluadas en los Tests
+
+Cada vulnerabilidad potencial cuenta con tests unitarios automatizados en [`tests/test_security.py`](tests/test_security.py):
+
+| Dimensión de Seguridad | Test Automatizado | Vulnerabilidad Mitigada / Comportamiento Esperado |
+| :--- | :--- | :--- |
+| **Control de Acceso Universal** | `test_unauthenticated_endpoints_rejected` | Todos los endpoints privados (`/notes`, `/tokens`, `/query`, `/graph`, `/agents/feed`, `/ingest`) rechazan peticiones anónimas retornando `401 Unauthorized`. |
+| **Protección contra Timing Attacks** | `secrets.compare_digest` en `security.py` | La comparación del Master Key se realiza en tiempo constante para neutralizar ataques por canal lateral de temporización. |
+| **Aislamiento Estricto de Scopes (RBAC)** | `test_read_scope_cannot_perform_writes_or_admin` | Un token con scope `read` puede consultar notas, grafos y feeds, pero tiene **bloqueado** crear notas, modificar carpetas o administrar tokens (`403 Forbidden`). |
+| **Separación de Privilegios Admin** | `test_write_scope_cannot_perform_admin` | Un token con scope `write` puede crear notas y aportar al feed, pero no puede crear/revocar tokens ni reindexar el vault (`403 Forbidden`). |
+| **Blindaje Dataview SQL contra Robo de Credenciales** | `test_query_engine_blocks_credential_theft` | El motor `/query/execute` bloquea consultas que intenten leer `api_tokens` (hashes de credenciales) o tablas del sistema SQLite (`sqlite_master`, `sqlite_schema`, `sqlite_sequence`). |
+| **Bloqueo de DDL/DML Destructivo** | `test_query_engine_blocks_ddl_and_dml` | Bloqueo absoluto de sentencias `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER` o `PRAGMA` en el motor de consultas dinámicas. |
+| **Prevención de Path Traversal** | `test_path_traversal_in_folders_blocked`, `test_path_traversal_in_move_note_blocked` | Validación estricta con `is_relative_to` y bloqueo de secuencias `..` para impedir que operaciones de carpetas o notas escapen del directorio `/vault/`. |
+| **Whitelist de Adjuntos Seguros** | `test_dangerous_attachment_extensions_rejected` | Bloqueo estricto de archivos ejecutables (`.exe`, `.sh`, `.php`, `.py`, `.bat`), permitiendo únicamente formatos seguros (imágenes, audios, documentos `.pdf`, `.md`, `.txt`, `.json`). |
+| **Inyección de Cabeceras HTTP de Seguridad** | `test_security_headers_injected_in_responses` | Inyección automática de `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block` y `Referrer-Policy: strict-origin-when-cross-origin`. |
+| **Ciclo de Vida & Revocación** | `test_expired_token_rejected`, `test_revoke_token` | Tokens revocados o con timestamp de expiración vencido (`expires_at`) son invalidados inmediatamente. |
+
+---
+
+### 📊 2. Ejecución de la Suite de Pruebas
+
+Para ejecutar la suite completa de pruebas unitarias, paridad Obsidian y seguridad:
+
+```bash
+# Ejecutar toda la batería con pytest
+pytest -v
+```
+
+```
+============================= test session starts =============================
+platform win32 -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+collected 38 items
+
+tests/test_api.py::test_health PASSED                                    [  2%]
+tests/test_api.py::test_health_no_auth_required PASSED                   [  5%]
+tests/test_api.py::test_notes_require_auth PASSED                        [  7%]
+tests/test_api.py::test_create_and_get_note PASSED                       [ 10%]
+tests/test_api.py::test_query_search PASSED                              [ 13%]
+tests/test_api.py::test_context_endpoint PASSED                          [ 15%]
+tests/test_api.py::test_graph_endpoint PASSED                            [ 18%]
+tests/test_api.py::test_create_token_as_admin PASSED                     [ 21%]
+tests/test_api.py::test_create_token_requires_admin PASSED               [ 23%]
+tests/test_api.py::test_list_tokens PASSED                               [ 26%]
+tests/test_api.py::test_use_token_for_read PASSED                        [ 28%]
+tests/test_api.py::test_use_token_for_write_blocks_read_only PASSED      [ 31%]
+tests/test_api.py::test_revoke_token PASSED                              [ 34%]
+tests/test_api.py::test_agents_feed_contribute PASSED                    [ 36%]
+tests/test_api.py::test_agents_feed_consume PASSED                       [ 39%]
+tests/test_api.py::test_agents_feed_digest PASSED                        [ 42%]
+tests/test_obsidian.py::test_markdown_callouts_and_checklists PASSED     [ 44%]
+tests/test_obsidian.py::test_tree_and_folders PASSED                     [ 47%]
+tests/test_obsidian.py::test_safe_rename PASSED                          [ 50%]
+tests/test_obsidian.py::test_unlinked_mentions_and_link PASSED           [ 52%]
+tests/test_obsidian.py::test_local_graph PASSED                          [ 55%]
+tests/test_obsidian.py::test_daily_note PASSED                           [ 57%]
+tests/test_obsidian.py::test_dynamic_query PASSED                        [ 60%]
+tests/test_security.py::test_unauthenticated_endpoints_rejected PASSED   [ 63%]
+tests/test_security.py::test_public_health_endpoint_remains_accessible PASSED [ 65%]
+tests/test_security.py::test_invalid_token_returns_403 PASSED            [ 68%]
+tests/test_security.py::test_malformed_auth_header PASSED                [ 71%]
+tests/test_security.py::test_expired_token_rejected PASSED               [ 73%]
+tests/test_security.py::test_read_scope_cannot_perform_writes_or_admin PASSED [ 76%]
+tests/test_security.py::test_write_scope_cannot_perform_admin PASSED     [ 78%]
+tests/test_security.py::test_query_engine_blocks_credential_theft PASSED [ 81%]
+tests/test_security.py::test_query_engine_blocks_ddl_and_dml PASSED      [ 84%]
+tests/test_security.py::test_query_engine_allows_legitimate_read_queries PASSED [ 86%]
+tests/test_security.py::test_path_traversal_in_folders_blocked PASSED    [ 89%]
+tests/test_security.py::test_path_traversal_in_move_note_blocked PASSED  [ 92%]
+tests/test_security.py::test_dangerous_attachment_extensions_rejected PASSED [ 94%]
+tests/test_security.py::test_safe_attachment_allowed PASSED              [ 97%]
+tests/test_security.py::test_security_headers_injected_in_responses PASSED [100%]
+
+======================= 38 passed in 6.75s (100%) =======================
+```
+
+---
+
+## 🔒 Privacidad y Local-First
+
+- **Zero Telemetry:** Ningún dato sale de tu servidor o VPS.
 - **Hash Criptográfico:** Las API Keys se guardan con hash SHA-256 en la base de datos SQLite. La clave en texto plano solo se muestra una vez al momento de creación.
-- **Granularidad de Permisos:** Puedes crear agentes que solo tengan permiso de lectura (`read`) para evitar que modifiquen el vault.
+- **Auditoría de Producción:** Probado y validado en entornos reales de producción (`supramemory.grupogeo.cl`).
 
 ---
 

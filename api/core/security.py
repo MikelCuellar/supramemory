@@ -140,7 +140,7 @@ async def require_api_key(
         )
     plain = parts[1].strip()
 
-    if plain == settings.api_key:
+    if secrets.compare_digest(plain, settings.api_key):
         return {"name": "master", "scopes": ["admin"]}
 
     token = _verify_token(plain)
