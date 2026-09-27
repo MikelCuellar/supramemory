@@ -38,7 +38,7 @@ function loadDocs() {
   <li>🕸️ <strong>Grafo Local:</strong> Subgrafo centrado en la nota activa con profundidad configurable (1 a 5 saltos) y control de físicas.</li>
   <li>📅 <strong>Notas Diarias (Daily Notes):</strong> Creación y apertura instantánea de la nota de hoy basada en plantillas.</li>
   <li>📎 <strong>Adjuntos e Imágenes:</strong> Pegar con <code>Ctrl+V</code> o arrastrar archivos para guardarlos en <code>/vault/attachments/</code>.</li>
-  <li>⚡ <strong>Dataview / Consultas Dinámicas:</strong> Bloques <code>```query SELECT ... ```</code> embebidos que renderizan tablas en vivo.</li>
+  <li>⚡ <strong>Dataview / Consultas Dinámicas:</strong> Bloques <code>\`\`\`query SELECT ... \`\`\`</code> embebidos que renderizan tablas en vivo.</li>
 </ul>
 
 <h2 id="auth">Autenticación</h2>
