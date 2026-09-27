@@ -2,24 +2,26 @@
 
 .node {
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s var(--ease-out, ease);
 }
 
 /* Halos y núcleos de nodos estilo neuronal */
 .node .node-halo {
   animation: neural-pulse 3s infinite ease-in-out;
   pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .node .node-core {
   stroke-width: 1.5;
-  transition: r 0.2s, fill 0.15s, stroke 0.15s, stroke-width 0.15s;
+  transition: r 0.25s, fill 0.2s, stroke 0.2s, stroke-width 0.2s, filter 0.2s;
 }
 
 @keyframes neural-pulse {
-  0% { transform: scale(1); opacity: 0.15; }
-  50% { transform: scale(1.35); opacity: 0.35; }
-  100% { transform: scale(1); opacity: 0.15; }
+  0% { transform: scale(1); opacity: 0.12; }
+  50% { transform: scale(1.4); opacity: 0.30; }
+  100% { transform: scale(1); opacity: 0.12; }
 }
 
 /* Colores por source usando CSS variables */
@@ -40,19 +42,19 @@
 .node circle                 { fill: var(--c-default);  stroke: var(--c-default-dim); color: var(--c-default); }
 
 .node:hover .node-core {
-  stroke: #ffffff;
+  stroke: var(--fg);
   stroke-width: 2.8;
-  filter: drop-shadow(0 0 10px var(--accent-bright));
+  filter: drop-shadow(0 0 12px var(--accent-bright, #c7ff3a));
 }
 
 .node.selected .node-core {
-  stroke: #ffffff;
+  stroke: var(--fg);
   stroke-width: 3.5;
-  filter: drop-shadow(0 0 12px var(--accent-bright));
+  filter: drop-shadow(0 0 16px var(--accent-bright, #c7ff3a));
 }
 
 .node.pinned .node-core {
-  stroke: var(--accent-bright);
+  stroke: var(--accent-bright, #c7ff3a);
   stroke-width: 3;
 }
 
@@ -62,26 +64,31 @@
   opacity: 0.85;
 }
 
-.node.dim .node-halo { opacity: 0; }
-.synapses.dim { opacity: 0.1; }
+/* Dim state — both .dim and .dimmed for compatibility */
+.node.dim .node-halo,
+.node.dimmed .node-halo { opacity: 0; }
+.synapses.dim,
+.synapses.dimmed { opacity: 0.1; }
 
 .node-label {
-  fill: var(--label-fill);
+  fill: var(--label-fill, #ffffff);
   font-size: 11px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   pointer-events: none;
   paint-order: stroke;
-  stroke: var(--label-stroke);
+  stroke: var(--label-stroke, #0a0a0f);
   stroke-width: 3px;
   stroke-linejoin: round;
   text-anchor: start;
   dominant-baseline: middle;
+  transition: opacity 0.2s;
 }
 
 /* Links por kind */
 .link {
   fill: none;
   stroke-opacity: 0.6;
+  transition: stroke-opacity 0.2s;
 }
 
 .link.wikilink {
@@ -110,78 +117,87 @@
   stroke: var(--link-default);
 }
 
-/* Hover/click affordances */
-.node.dim circle { opacity: 0.2; }
-.node.dim .node-label { opacity: 0.2; }
-.link.dim { stroke-opacity: 0.05; }
+/* Hover/click affordances — both .dim and .dimmed */
+.node.dim circle,
+.node.dimmed circle { opacity: 0.15; }
+.node.dim .node-label,
+.node.dimmed .node-label { opacity: 0.15; }
+.link.dim,
+.link.dimmed { stroke-opacity: 0.04; }
 
 .node.highlight circle {
   stroke: var(--fg);
   stroke-width: 3;
-  filter: drop-shadow(0 0 6px var(--accent));
+  filter: drop-shadow(0 0 8px var(--accent, #a8e10c));
 }
 
-/* Zoom controls overlay */
+/* ===== Zoom controls overlay ===== */
 #zoom-controls {
   position: absolute;
   bottom: 16px;
   right: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  z-index: 10;
+  gap: 4px;
+  z-index: 16;
 }
 
 #zoom-controls button {
   width: 36px;
   height: 36px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--fg);
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border, #252530);
+  background: var(--bg-elevated, #12121a);
+  color: var(--fg, #e8e8ef);
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
 }
 
 #zoom-controls button:hover {
-  background: var(--accent);
-  color: var(--text-on-accent);
-  border-color: var(--accent-bright);
+  background: var(--accent, #a8e10c);
+  color: var(--text-on-accent, #0a0a0f);
+  border-color: var(--accent-bright, #c7ff3a);
+  transform: scale(1.08);
+  box-shadow: 0 0 12px rgba(168, 225, 12, 0.3);
 }
 
 #zoom-controls button:active {
   transform: scale(0.95);
 }
 
-/* Theme toggle button */
+/* ===== Theme toggle button ===== */
 #theme-toggle {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
+  top: 16px;
+  right: 16px;
   width: 36px;
   height: 36px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--fg);
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border, #252530);
+  background: var(--bg-elevated, #12121a);
+  color: var(--fg, #e8e8ef);
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-  z-index: 10;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 16;
+  backdrop-filter: blur(8px);
 }
 
 #theme-toggle:hover {
-  background: var(--accent);
-  color: var(--text-on-accent);
-  border-color: var(--accent-bright);
+  background: var(--accent, #a8e10c);
+  color: var(--text-on-accent, #0a0a0f);
+  border-color: var(--accent-bright, #c7ff3a);
+  transform: scale(1.08);
+  box-shadow: 0 0 12px rgba(168, 225, 12, 0.3);
 }
 
 #theme-toggle:active {

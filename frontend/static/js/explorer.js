@@ -115,11 +115,20 @@ const Explorer = (() => {
         </div>
       `;
 
-      el.querySelector(".file-label").addEventListener("click", (e) => {
+      const fileLabel = el.querySelector(".file-label");
+      fileLabel.addEventListener("click", (e) => {
         e.stopPropagation();
         setActive(item.id);
         if (onSelectNoteCallback) onSelectNoteCallback(item);
       });
+
+      if (!isAttach) {
+        fileLabel.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          showItemMenu(e, item);
+        });
+      }
 
       const menuBtn = el.querySelector(".item-menu-btn");
       if (menuBtn) {
@@ -147,7 +156,7 @@ const Explorer = (() => {
     fileItems.forEach(el => {
       const name = el.querySelector(".tree-name")?.textContent.toLowerCase() || "";
       const matches = !term || name.includes(term);
-      el.style.display = matches ? "flex" : "none";
+      el.style.display = matches ? "" : "none";
     });
   }
 

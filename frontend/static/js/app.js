@@ -222,8 +222,18 @@
       .replace(/"/g, '&quot;');
   }
 
+  window.escapeHtml = escapeHtml;
   window.appLoadGraph = loadGraph;
 })();
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 // === Tokens tab logic ===
 async function loadTokens() {

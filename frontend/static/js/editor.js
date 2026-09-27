@@ -229,6 +229,37 @@ const Editor = (() => {
       }
     });
 
+    // Navegación con teclado en Omni-Suggest
+    textarea?.addEventListener("keydown", (e) => {
+      const suggestEl = document.getElementById("omni-suggest");
+      if (suggestEl && !suggestEl.classList.contains("hidden")) {
+        const items = Array.from(suggestEl.querySelectorAll(".suggest-item"));
+        const activeIdx = items.findIndex(el => el.classList.contains("selected"));
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = (activeIdx + 1) % items.length;
+          items.forEach((el, idx) => el.classList.toggle("selected", idx === next));
+          items[next]?.scrollIntoView({ block: 'nearest' });
+          return;
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = (activeIdx - 1 + items.length) % items.length;
+          items.forEach((el, idx) => el.classList.toggle("selected", idx === prev));
+          items[prev]?.scrollIntoView({ block: 'nearest' });
+          return;
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          if (activeIdx >= 0 && items[activeIdx]) {
+            e.preventDefault();
+            items[activeIdx].click();
+            return;
+          }
+        } else if (e.key === "Escape") {
+          suggestEl.classList.add("hidden");
+          return;
+        }
+      }
+    });
+
     // Edición y Omni-Suggest
     textarea?.addEventListener("input", () => {
       updateLivePreview();
@@ -282,6 +313,33 @@ const Editor = (() => {
       }
     }
 
+    if (tagMatch) {
+      const tagQuery = tagMatch[1].toLowerCase().trim();
+      const allTags = new Set();
+      allNotesList.forEach(n => (n.tags || []).forEach(t => allTags.add(t)));
+      const matches = Array.from(allTags)
+        .filter(t => t.toLowerCase().includes(tagQuery))
+        .slice(0, 6)
+        .map(t => ({ title: `#${t}` }));
+
+      if (matches.length > 0) {
+        showSuggestPopup(suggestEl, matches, tagQuery, (selectedTag) => {
+          const cleanTag = selectedTag.replace(/^#/, '');
+          const start = textBefore.lastIndexOf('#');
+          const after = val.substring(cursorPos);
+          textarea.value = val.substring(0, start) + `#${cleanTag} ` + after;
+          const newPos = start + cleanTag.length + 2;
+          textarea.selectionStart = newPos;
+          textarea.selectionEnd = newPos;
+          suggestEl.classList.add("hidden");
+          textarea.focus();
+          triggerAutoSave();
+          updateLivePreview();
+        });
+        return;
+      }
+    }
+
     suggestEl.classList.add("hidden");
   }
 
@@ -292,12 +350,14 @@ const Editor = (() => {
     matches.forEach((m, idx) => {
       const item = document.createElement("div");
       item.className = `suggest-item ${idx === 0 ? 'selected' : ''}`;
-      item.innerHTML = `<span class="sugg-icon">📄</span> <span class="sugg-title">${escapeHtml(m.title)}</span>`;
+      const isTag = m.title.startsWith('#');
+      const icon = isTag ? '🏷️' : '📄';
+      item.innerHTML = `<span class="sugg-icon">${icon}</span> <span class="sugg-title">${escapeHtml(m.title)}</span>`;
       item.addEventListener("click", () => onSelect(m.title));
       el.appendChild(item);
     });
 
-    if (query && !matches.some(m => m.title.toLowerCase() === query)) {
+    if (query && !matches.some(m => m.title.toLowerCase() === query || m.title.toLowerCase() === `#${query}`)) {
       const createItem = document.createElement("div");
       createItem.className = "suggest-item create-new";
       createItem.innerHTML = `<span>➕ Crear nota "<b>${escapeHtml(query)}</b>"</span>`;
@@ -306,28 +366,89 @@ const Editor = (() => {
     }
   }
 
-  async function updateLivePreview() {
+  function quickRenderMarkdown(md) {
+    if (!md) return '<div class="muted small">Escribe algo en el editor para previsualizar...</div>';
+    let html = escapeHtml(md);
+
+    // Code blocks
+    html = html.replace(/```([a-z0-9_\-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+      return `<pre><code class="language-${lang}">${code}</code></pre>`;
+    });
+
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Callouts estilo Obsidian (> [!NOTE], > [!TIP], etc.)
+    html = html.replace(/^>\s*\[!([A-Z]+)\]\s*([^\n]*)\n((?:>[^\n]*\n?)*)/gm, (match, type, title, body) => {
+      const calloutType = type.toLowerCase();
+      const bodyLines = body.split('\n').map(l => l.replace(/^>\s?/, '')).join('<br>');
+      return `<div class="callout callout-${calloutType}"><div class="callout-header">📌 ${title || type}</div>${bodyLines}</div>`;
+    });
+
+    // Encabezados
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+    // Tareas
+    html = html.replace(/^- \[x\] (.*$)/gim, '<li class="task-list-item task-done"><input type="checkbox" checked disabled class="task-checkbox"> $1</li>');
+    html = html.replace(/^- \[ \] (.*$)/gim, '<li class="task-list-item"><input type="checkbox" disabled class="task-checkbox"> $1</li>');
+
+    // Listas
+    html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+
+    // Wikilinks [[target|alias]] o [[target]]
+    html = html.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, target, alias) => {
+      return `<a href="#" class="wikilink" data-target="${escapeAttr(target.trim())}">${escapeHtml(alias || target)}</a>`;
+    });
+
+    // Tags #tag
+    html = html.replace(/(^|\s)#([a-zA-Z0-9_\-]+)/g, '$1<span class="tag">#$2</span>');
+
+    // Negrita y cursiva
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Saltos de línea y párrafos
+    html = html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>');
+
+    return `<p>${html}</p>`;
+  }
+
+  function bindWikilinks(containerEl) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll(".wikilink").forEach(link => {
+      link.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const targetSlug = link.dataset.target;
+        if (targetSlug) {
+          open(targetSlug);
+          if (window.Explorer && window.Explorer.setActive) {
+            window.Explorer.setActive(targetSlug);
+          }
+        }
+      });
+    });
+  }
+
+  function updateLivePreview() {
     const textarea = document.getElementById("note-content-area");
     const preview = document.getElementById("note-rendered-html");
-    if (!textarea || !preview || !currentNote) return;
+    if (!textarea || !preview) return;
 
+    preview.innerHTML = quickRenderMarkdown(textarea.value);
+    bindWikilinks(preview);
+  }
+
+  async function fetchServerRendered(noteId) {
+    const preview = document.getElementById("note-rendered-html");
+    if (!preview || !currentNote || currentNote.id !== noteId) return;
     try {
-      const rendered = await API.getRendered(currentNote.id);
+      const rendered = await API.getRendered(noteId);
       preview.innerHTML = rendered.html;
-
-      // Click en wikilinks renderizados
-      preview.querySelectorAll(".wikilink").forEach(link => {
-        link.addEventListener("click", async (e) => {
-          e.preventDefault();
-          const targetSlug = link.dataset.target;
-          if (targetSlug) {
-            open(targetSlug);
-            Explorer.setActive(targetSlug);
-          }
-        });
-      });
+      bindWikilinks(preview);
     } catch (e) {
-      preview.innerHTML = `<div class="render-error">Render error: ${escapeHtml(e.message)}</div>`;
+      console.warn("Server render sync warning:", e);
     }
   }
 
@@ -342,7 +463,10 @@ const Editor = (() => {
       try {
         await API.updateNote(currentNote.id, { content });
         setSaveStatus("Guardado ✓");
-        await loadBacklinksAndMentions(currentNote.id);
+        await Promise.all([
+          fetchServerRendered(currentNote.id),
+          loadBacklinksAndMentions(currentNote.id)
+        ]);
         if (onNoteUpdatedCallback) onNoteUpdatedCallback(currentNote);
       } catch (e) {
         setSaveStatus(`Error guardando: ${e.message}`);
@@ -412,6 +536,13 @@ const Editor = (() => {
             await API.linkMention(noteId, sourceId, targetTitle);
             btn.textContent = "Enlazado ✓";
             btn.disabled = true;
+            if (sourceId === currentNote.id) {
+              const fresh = await API.getNote(currentNote.id);
+              currentNote.content = fresh.content;
+              const textarea = document.getElementById("note-content-area");
+              if (textarea) textarea.value = fresh.content;
+              updateLivePreview();
+            }
             await loadBacklinksAndMentions(noteId);
             if (onNoteUpdatedCallback) onNoteUpdatedCallback(currentNote);
           } catch (err) {

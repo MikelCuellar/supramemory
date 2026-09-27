@@ -1,12 +1,18 @@
 // Agents feed — para que un agente IA consulte y aporte.
 const AgentsFeed = (() => {
-  const KEY = localStorage.getItem('supramemory_api_key') || '';
+  function getKey() {
+    return (window.API && window.API.getKey ? window.API.getKey() : localStorage.getItem('supramemory_api_key')) || '';
+  }
 
   function authHeaders() {
-    return KEY ? { 'Authorization': `Bearer ${KEY}` } : {};
+    const key = getKey();
+    return key ? { 'Authorization': `Bearer ${key}` } : {};
   }
 
   async function req(path, opts = {}) {
+    if (window.API && window.API.req) {
+      return window.API.req(path, opts);
+    }
     const headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(opts.headers || {}) };
     const res = await fetch(path, { ...opts, headers });
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);

@@ -5,6 +5,7 @@ const Graph = (() => {
   let selectedNode = null;
   let onSelectCallback = null;
   let width = 800, height = 600;
+  let particleAnimId = null;
 
   // Estado y configuraciones de simulación
   let graphMode = "global"; // "global" | "local"
@@ -237,20 +238,28 @@ const Graph = (() => {
           .attr('x2', d => d.target.x)
           .attr('y2', d => d.target.y);
 
-        particleSel
-          .attr('cx', d => {
-            d.progress += d.speed;
-            if (d.progress > 1) d.progress = 0;
-            const sx = d.link.source.x || 0, tx = d.link.target.x || 0;
-            return sx + (tx - sx) * d.progress;
-          })
-          .attr('cy', d => {
-            const sy = d.link.source.y || 0, ty = d.link.target.y || 0;
-            return sy + (ty - sy) * d.progress;
-          });
-
         nodeGroup.attr('transform', d => `translate(${d.x},${d.y})`);
       });
+
+    // Animación continua e independiente de partículas sinápticas
+    if (particleAnimId) cancelAnimationFrame(particleAnimId);
+    function stepParticles() {
+      particleSel
+        .attr('cx', d => {
+          d.progress += d.speed;
+          if (d.progress > 1) d.progress = 0;
+          const sx = d.link.source.x || 0, tx = d.link.target.x || 0;
+          return sx + (tx - sx) * d.progress;
+        })
+        .attr('cy', d => {
+          const sy = d.link.source.y || 0, ty = d.link.target.y || 0;
+          return sy + (ty - sy) * d.progress;
+        });
+      particleAnimId = requestAnimationFrame(stepParticles);
+    }
+    if (particlesData.length > 0) {
+      stepParticles();
+    }
   }
 
   function makeDrag() {
@@ -474,9 +483,16 @@ const Graph = (() => {
     return s.length > max ? s.substring(0, max - 1) + '…' : s;
   }
 
+  function reheat(alpha = 0.3) {
+    if (simulation) {
+      simulation.alpha(alpha).restart();
+    }
+  }
+
   return {
     init,
     render,
+    reheat,
     loadLocalGraph,
     selectNode,
     deselect,
