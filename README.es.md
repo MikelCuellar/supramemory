@@ -7,6 +7,8 @@
 
 [![English](https://img.shields.io/badge/Language-English-blue.svg)](README.md)
 [![Español](https://img.shields.io/badge/Idioma-Español-red.svg)](README.es.md)
+[![Français](https://img.shields.io/badge/Langue-Français-indigo.svg)](#-soporte-multilingüe-i18n)
+[![Svenska](https://img.shields.io/badge/Språk-Svenska-yellow.svg)](#-soporte-multilingüe-i18n)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![SQLite FTS5](https://img.shields.io/badge/SQLite-FTS5%20BM25-003B57.svg?logo=sqlite&logoColor=white)](https://www.sqlite.org/fts5.html)
@@ -21,6 +23,7 @@
 [🏆 Ventajas Competitivas](#-por-qué-supramemory-ventajas-frente-a-obsidian-y-vector-dbs) •
 [🤖 Playbook para Agentes IA](#-playbook-del-cerebro-ia-cómo-sacarle-el-máximo-provecho) •
 [📝 Experiencia Obsidian](#-experiencia-pkm-estilo-obsidian-para-humanos) •
+[🌐 Soporte Multilingüe](#-soporte-multilingüe-i18n) •
 [🚀 Instalación & Despliegue](#-guía-de-instalación-y-despliegue-docker--vps) •
 [🛡️ Tests & Seguridad](#-seguridad-hardening-y-batería-de-tests-automatizados) •
 [📡 API Reference](#-referencia-de-api)
@@ -228,6 +231,25 @@ Supramemory ofrece una interfaz visual completa diseñada para el flujo de traba
 - ⚡ **Consultas Dinámicas (Dataview):** Bloques ` ```query SELECT title, tags FROM notes WHERE tag = 'proyecto' ``` ` que renderizan tablas en vivo.
 - 📅 **Notas Diarias (*Daily Notes*):** Acceso rápido con 1 clic para crear o abrir la nota de hoy basada en plantillas (`{{date}}`, `{{time}}`, `{{title}}`).
 - 📎 **Arrastre y Pegado de Imágenes (`Ctrl+V`):** Sube automáticamente imágenes y multimedia a `/vault/attachments/` e inserta `![[imagen.png]]`.
+
+---
+
+## 🌐 Soporte Multilingüe (i18n)
+
+Supramemory cuenta con soporte nativo e integral para múltiples idiomas en toda su interfaz web, editor en vivo, visualizador de grafos y documentación interactiva para desarrolladores:
+
+| Idioma | Código | Variante / Región | Interfaz y Editor | Documentación Interactiva (`/docs`) |
+| :--- | :---: | :--- | :---: | :---: |
+| **Español** | `es` | 🇲🇽 Neutro / México / Latinoamérica (Predeterminado) | ✅ 100% Traducido | ✅ Documentación Completa en Español |
+| **English** | `en` | 🇺🇸 Global / Estados Unidos | ✅ 100% Traducido | ✅ Documentación Completa en Inglés |
+| **Français** | `fr` | 🇫🇷 Francia y Francofonía | ✅ 100% Traducido | ✅ Documentación Completa en Francés |
+| **Svenska** | `sv` | 🇸🇪 Suecia (*Sverige*) | ✅ 100% Traducido | ✅ Documentación Completa en Sueco |
+
+### Características del Sistema Multilingüe:
+- ⚡ **Cambio en Caliente sin Recarga:** Alterna entre Español, Inglés, Francés y Sueco instantáneamente mediante el selector de la barra superior sin recargar la página ni perder el estado del editor.
+- 💾 **Persistencia Automática:** Almacena la preferencia del usuario en `localStorage` (`supramemory_lang`).
+- 📚 **Documentación Interactiva Localizada:** La pestaña `/docs` renderiza guías de inicio rápido, endpoints y ejemplos de código adaptados al idioma activo.
+- ⚙️ **Grafo y Paneles Reactivos:** Los controles de físicas, el explorador de archivos, inspector de backlinks y la barra de estado se adaptan dinámicamente al idioma seleccionado.
 
 ---
 

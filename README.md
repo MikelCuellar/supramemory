@@ -7,6 +7,8 @@
 
 [![English](https://img.shields.io/badge/Language-English-blue.svg)](README.md)
 [![Español](https://img.shields.io/badge/Idioma-Español-red.svg)](README.es.md)
+[![Français](https://img.shields.io/badge/Langue-Français-indigo.svg)](#-multilingual-support-i18n)
+[![Svenska](https://img.shields.io/badge/Språk-Svenska-yellow.svg)](#-multilingual-support-i18n)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![SQLite FTS5](https://img.shields.io/badge/SQLite-FTS5%20BM25-003B57.svg?logo=sqlite&logoColor=white)](https://www.sqlite.org/fts5.html)
@@ -21,6 +23,7 @@
 [🏆 Competitive Advantages](#-why-supramemory-advantages-over-obsidian--vector-dbs) •
 [🤖 AI Agent Playbook](#-ai-agent-playbook-maximizing-long-term-memory) •
 [📝 Obsidian Experience](#-obsidian-grade-pkm-experience-for-humans) •
+[🌐 Multilingual Support](#-multilingual-support-i18n) •
 [🚀 Installation & Deployment](#-installation--deployment-guide-docker--vps) •
 [🛡️ Tests & Security](#-security-hardening--automated-test-suite) •
 [📡 API Reference](#-api-reference)
@@ -228,6 +231,25 @@ Supramemory delivers a complete human-facing interface tuned for modern personal
 - ⚡ **Dynamic Queries (Dataview):** Embed live SQL query blocks: ` ```query SELECT title, tags FROM notes WHERE tag = 'project' ``` `.
 - 📅 **Daily Notes:** 1-click daily note creation based on customizable templates (`{{date}}`, `{{time}}`, `{{title}}`).
 - 📎 **Image Clipboard Pasting (`Ctrl+V`) & Drag-and-Drop:** Automatically saves image attachments into `/vault/attachments/` and inserts `![[image.png]]`.
+
+---
+
+## 🌐 Multilingual Support (i18n)
+
+Supramemory features native internationalization across its entire interface, live editor, graph visualizer, and developer documentation. Users and AI agents can seamlessly interact with the system in their preferred language:
+
+| Language | Code | Locale / Dialect | Interface & Editor | Interactive Docs (`/docs`) |
+| :--- | :---: | :--- | :---: | :---: |
+| **Español** | `es` | 🇲🇽 Neutral / Latin America (Default) | ✅ 100% Translated | ✅ Full Spanish Documentation |
+| **English** | `en` | 🇺🇸 Global / United States | ✅ 100% Translated | ✅ Full English Documentation |
+| **Français** | `fr` | 🇫🇷 France & Francophonie | ✅ 100% Translated | ✅ Full French Documentation |
+| **Svenska** | `sv` | 🇸🇪 Sweden (*Sverige*) | ✅ 100% Translated | ✅ Full Swedish Documentation |
+
+### Key Multilingual Capabilities:
+- ⚡ **Instant Client-Side Hot-Switching:** Switch between Spanish, English, French, and Swedish instantly using the top-bar selector without page reloads or loss of editor state.
+- 💾 **Persistent Preference:** Automatically saves and syncs the user's active language in `localStorage` (`supramemory_lang`).
+- 📚 **Localized Interactive Documentation:** The `/docs` tab dynamically renders translated architectural overviews, quickstarts, API endpoints, and code examples for each supported language.
+- ⚙️ **Reactive Graph & Panels:** Real-time D3 physics controls, file explorer tooltips, backlink inspectors, and status bar metrics adapt immediately to the chosen locale.
 
 ---
 
