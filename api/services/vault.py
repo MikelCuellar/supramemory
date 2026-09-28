@@ -98,6 +98,44 @@ def create_folder(folder_path: str) -> dict:
     return {"status": "created", "path": clean_path}
 
 
+def delete_folder(folder_path: str) -> dict:
+    """Elimina una carpeta dentro del vault de forma segura y purga las notas correspondientes de la DB."""
+    clean_path = folder_path.strip("/\\")
+    if not clean_path or clean_path in (".", "/"):
+        raise ValueError("Ruta inválida: No se puede eliminar la raíz del vault")
+    if ".." in clean_path.split("/") or ".." in clean_path.split("\\"):
+        raise ValueError("Ruta inválida: '..' no está permitido en el nombre de la carpeta")
+
+    target_dir = settings.vault_path / clean_path
+    resolved_target = _ensure_safe_path(target_dir, settings.vault_path)
+
+    if not resolved_target.exists():
+        raise ValueError(f"La carpeta '{clean_path}' no existe")
+    if not resolved_target.is_dir():
+        raise ValueError(f"'{clean_path}' no es una carpeta")
+
+    # Identificar todas las notas .md contenidas para purgarlas de la base de datos
+    deleted_notes = []
+    for md_file in resolved_target.glob("**/*.md"):
+        nid = md_file.stem
+        deleted_notes.append(nid)
+
+    if deleted_notes:
+        with get_db() as conn:
+            for nid in deleted_notes:
+                row = conn.execute("SELECT rowid FROM notes WHERE id = ?", (nid,)).fetchone()
+                if row:
+                    conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (row["rowid"],))
+                conn.execute("DELETE FROM notes WHERE id = ?", (nid,))
+
+    shutil.rmtree(resolved_target)
+    return {
+        "status": "deleted",
+        "path": clean_path,
+        "deleted_notes": deleted_notes,
+    }
+
+
 def move_note(note_id: str, target_folder: str) -> dict:
     """Mueve una nota existente a otra carpeta dentro del vault de forma segura."""
     note = get_note(note_id)

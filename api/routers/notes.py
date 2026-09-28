@@ -71,6 +71,16 @@ async def create_folder(payload: CreateFolderRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.delete("/folders", dependencies=[Depends(require_write)])
+async def delete_folder(path: str = Query(..., description="Ruta de la carpeta a eliminar dentro del vault")):
+    """Elimina una carpeta dentro del vault de forma segura y purga sus notas de la DB."""
+    try:
+        return vault_svc.delete_folder(path)
+    except ValueError as e:
+        status_code = 404 if "no existe" in str(e).lower() else 400
+        raise HTTPException(status_code=status_code, detail=str(e))
+
+
 @router.post("/move", dependencies=[Depends(require_write)])
 async def move_note(payload: MoveNoteRequest):
     """Mueve una nota a otra carpeta del vault."""

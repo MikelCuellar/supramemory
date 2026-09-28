@@ -62,7 +62,18 @@ const Explorer = (() => {
     document.getElementById("btn-new-note")?.addEventListener("click", promptNewNote);
     document.getElementById("btn-new-folder")?.addEventListener("click", promptNewFolder);
     document.getElementById("btn-daily-note")?.addEventListener("click", openDailyNote);
-    document.getElementById("btn-refresh-tree")?.addEventListener("click", loadTree);
+    
+    const refreshBtn = document.getElementById("btn-refresh-tree");
+    refreshBtn?.addEventListener("click", async () => {
+      refreshBtn.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
+      refreshBtn.style.transform = "rotate(360deg)";
+      setTimeout(() => {
+        refreshBtn.style.transition = "";
+        refreshBtn.style.transform = "";
+      }, 500);
+      await loadTree();
+      if (window.appLoadGraph) window.appLoadGraph();
+    });
 
     // Filtro en vivo
     document.getElementById("explorer-filter")?.addEventListener("input", (e) => {
@@ -78,10 +89,11 @@ const Explorer = (() => {
 
     if (item.type === "directory") {
       el.innerHTML = `
-        <div class="tree-label folder-label">
+        <div class="tree-label folder-label" title="${escapeHtml(item.path)}">
           <span class="folder-arrow">▼</span>
           <span class="folder-icon">📁</span>
           <span class="tree-name">${escapeHtml(item.name)}</span>
+          <div class="item-menu-btn" title="Opciones">⋮</div>
         </div>
         <div class="folder-children"></div>
       `;
@@ -89,16 +101,31 @@ const Explorer = (() => {
       const folderChildren = el.querySelector(".folder-children");
       const folderArrow = el.querySelector(".folder-arrow");
       const folderHeader = el.querySelector(".tree-label");
+      const folderMenuBtn = el.querySelector(".item-menu-btn");
 
       if (item.children) {
         item.children.forEach(c => folderChildren.appendChild(createNodeElement(c)));
       }
 
       folderHeader.addEventListener("click", (e) => {
+        if (e.target.closest(".item-menu-btn")) return;
         e.stopPropagation();
         const isCollapsed = folderChildren.classList.toggle("collapsed");
         folderArrow.textContent = isCollapsed ? "▶" : "▼";
       });
+
+      folderHeader.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showFolderMenu(e, item);
+      });
+
+      if (folderMenuBtn) {
+        folderMenuBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showFolderMenu(e, item);
+        });
+      }
     } else {
       // Archivo de nota o adjunto
       const isAttach = item.type === "attachment";
@@ -228,6 +255,7 @@ const Explorer = (() => {
       try {
         const res = await API.renameNote(item.id, newTitle.trim());
         await loadTree();
+        if (window.appLoadGraph) window.appLoadGraph();
         if (onSelectNoteCallback) onSelectNoteCallback(await API.getNote(res.new_id));
       } catch (err) {
         alert(`Error: ${err.message}`);
@@ -240,6 +268,75 @@ const Explorer = (() => {
       try {
         await API.deleteNote(item.id);
         await loadTree();
+        if (window.appLoadGraph) window.appLoadGraph();
+        if (onSelectNoteCallback && activeNoteId === item.id) onSelectNoteCallback(null);
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    });
+  }
+
+  function showFolderMenu(e, item) {
+    const t = (k, p) => window.I18n ? window.I18n.t(k, p) : k;
+    const existing = document.getElementById("tree-context-menu");
+    if (existing) existing.remove();
+
+    const menu = document.createElement("div");
+    menu.id = "tree-context-menu";
+    menu.className = "context-menu";
+    menu.style.left = `${e.pageX}px`;
+    menu.style.top = `${e.pageY}px`;
+
+    menu.innerHTML = `
+      <div class="menu-item" id="menu-new-file">${t('menu_new_file_folder')}</div>
+      <div class="menu-item" id="menu-new-sub">${t('menu_new_subfolder')}</div>
+      <div class="menu-item danger" id="menu-delete-dir">${t('menu_delete_folder')}</div>
+    `;
+    document.body.appendChild(menu);
+
+    const closeMenu = () => menu.remove();
+    setTimeout(() => document.addEventListener("click", closeMenu, { once: true }), 10);
+
+    menu.querySelector("#menu-new-file")?.addEventListener("click", async () => {
+      const title = prompt(t('prompt_new_note'));
+      if (!title || !title.trim()) return;
+      try {
+        const note = await API.createNote({
+          title: title.trim(),
+          content: `# ${title.trim()}\n\n`,
+          source: "manual",
+        });
+        if (item.path) {
+          await API.moveNote(note.id, item.path);
+        }
+        await loadTree();
+        setActive(note.id);
+        if (window.appLoadGraph) window.appLoadGraph();
+        if (onSelectNoteCallback) onSelectNoteCallback(note);
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    });
+
+    menu.querySelector("#menu-new-sub")?.addEventListener("click", async () => {
+      const name = prompt(t('prompt_new_folder_sub'));
+      if (!name || !name.trim()) return;
+      try {
+        const targetPath = item.path ? `${item.path}/${name.trim()}` : name.trim();
+        await API.createFolder(targetPath);
+        await loadTree();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    });
+
+    menu.querySelector("#menu-delete-dir")?.addEventListener("click", async () => {
+      const confirmMsg = t('confirm_delete_folder', { name: item.name });
+      if (!confirm(confirmMsg)) return;
+      try {
+        await API.deleteFolder(item.path);
+        await loadTree();
+        if (window.appLoadGraph) window.appLoadGraph();
         if (onSelectNoteCallback) onSelectNoteCallback(null);
       } catch (err) {
         alert(`Error: ${err.message}`);

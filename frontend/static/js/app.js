@@ -104,6 +104,7 @@
   });
 
   // Cargar grafo inicial
+  window.appLoadGraph = loadGraph;
   await loadGraph();
 
   async function loadGraph() {

@@ -191,7 +191,6 @@ def test_daily_note(client):
     assert "Diario" in data["note"]["title"]
     assert "daily" in data["note"]["tags"]
 
-
 def test_dynamic_query(client):
     client.post("/notes", headers={"Authorization": "Bearer test-key"}, json={"title": "Test Q1", "content": "Item 1", "tags": ["tag1"]})
     res = client.post(
@@ -203,3 +202,75 @@ def test_dynamic_query(client):
     data = res.json()
     assert "columns" in data
     assert len(data["rows"]) == 1
+
+
+def test_delete_note_removes_physical_file_and_tree(client):
+    # Crear nota
+    r = client.post(
+        "/notes",
+        headers={"Authorization": "Bearer test-key"},
+        json={"title": "Nota Para Borrar", "content": "Texto a borrar"},
+    )
+    assert r.status_code == 201
+    nid = r.json()["id"]
+
+    # Verificar que aparece en el tree
+    tree = client.get("/notes/tree", headers={"Authorization": "Bearer test-key"}).json()
+    names = [c["name"] for c in tree["children"]]
+    assert f"{nid}.md" in names
+
+    # Borrar la nota
+    del_res = client.delete(f"/notes/{nid}", headers={"Authorization": "Bearer test-key"})
+    assert del_res.status_code == 204
+
+    # Verificar que no existe en DB
+    get_res = client.get(f"/notes/{nid}", headers={"Authorization": "Bearer test-key"})
+    assert get_res.status_code == 404
+
+    # Verificar que ya NO aparece en el tree del filesystem
+    tree_after = client.get("/notes/tree", headers={"Authorization": "Bearer test-key"}).json()
+    names_after = [c["name"] for c in tree_after["children"]]
+    assert f"{nid}.md" not in names_after
+
+
+def test_delete_folder_removes_folder_and_purges_notes(client):
+    # Crear carpeta
+    client.post(
+        "/notes/folders",
+        headers={"Authorization": "Bearer test-key"},
+        json={"path": "CarpetaPrueba"},
+    )
+
+    # Crear nota y moverla dentro de CarpetaPrueba
+    client.post(
+        "/notes",
+        headers={"Authorization": "Bearer test-key"},
+        json={"title": "Nota En Carpeta", "content": "Dentro de carpeta", "id": "nota-en-carpeta"},
+    )
+    client.post(
+        "/notes/move",
+        headers={"Authorization": "Bearer test-key"},
+        json={"note_id": "nota-en-carpeta", "target_folder": "CarpetaPrueba"},
+    )
+
+    # Verificar que tree contiene la carpeta
+    tree = client.get("/notes/tree", headers={"Authorization": "Bearer test-key"}).json()
+    folders = [c["name"] for c in tree["children"] if c["type"] == "directory"]
+    assert "CarpetaPrueba" in folders
+
+    # Borrar la carpeta
+    del_res = client.delete("/notes/folders?path=CarpetaPrueba", headers={"Authorization": "Bearer test-key"})
+    assert del_res.status_code == 200
+    del_data = del_res.json()
+    assert del_data["status"] == "deleted"
+    assert "nota-en-carpeta" in del_data["deleted_notes"]
+
+    # Verificar que tree ya no contiene la carpeta
+    tree_after = client.get("/notes/tree", headers={"Authorization": "Bearer test-key"}).json()
+    folders_after = [c["name"] for c in tree_after["children"] if c["type"] == "directory"]
+    assert "CarpetaPrueba" not in folders_after
+
+    # Verificar que la nota fue purgada de la DB
+    get_note = client.get("/notes/nota-en-carpeta", headers={"Authorization": "Bearer test-key"})
+    assert get_note.status_code == 404
+

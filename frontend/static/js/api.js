@@ -67,6 +67,7 @@ const API = (() => {
       }),
     getDailyNote: () => req('/notes/daily', { method: 'POST' }),
     createFolder: (path) => req('/notes/folders', { method: 'POST', body: JSON.stringify({ path }) }),
+    deleteFolder: (path) => req(`/notes/folders?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
     moveNote: (noteId, targetFolder) =>
       req('/notes/move', { method: 'POST', body: JSON.stringify({ note_id: noteId, target_folder: targetFolder }) }),
     uploadAttachment: async (file) => {

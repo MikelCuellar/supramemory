@@ -154,9 +154,56 @@ def update_note(note_id: str, title: str | None = None, content: str | None = No
 
 
 def delete_note(note_id: str) -> bool:
+    """Elimina la nota de SQLite (con tags, links y FTS5) y borra el archivo físico .md del vault."""
+    note_path_str = None
     with get_db() as conn:
-        cursor = conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
-        return cursor.rowcount > 0
+        row = conn.execute("SELECT rowid, path FROM notes WHERE id = ?", (note_id,)).fetchone()
+        if row:
+            conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (row["rowid"],))
+            cursor = conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+            db_deleted = cursor.rowcount > 0
+            note_path_str = row["path"]
+        else:
+            db_deleted = False
+
+    # Borrado físico en disco dentro del vault
+    file_deleted = False
+    if settings.vault_path.exists():
+        vault_root = settings.vault_path.resolve()
+
+        # 1. Si la nota tenía un path guardado
+        if note_path_str:
+            p = Path(note_path_str)
+            if not p.is_absolute():
+                p = settings.vault_path / p
+            try:
+                p_res = p.resolve()
+                if p_res.is_relative_to(vault_root) and p_res.is_file():
+                    p_res.unlink(missing_ok=True)
+                    file_deleted = True
+            except Exception:
+                pass
+
+        # 2. Archivo en la raíz del vault
+        default_file = settings.vault_path / f"{note_id}.md"
+        if default_file.is_file():
+            try:
+                default_file.unlink(missing_ok=True)
+                file_deleted = True
+            except Exception:
+                pass
+
+        # 3. Búsqueda exhaustiva por si fue movida dentro de subcarpetas
+        for cand in settings.vault_path.glob(f"**/{note_id}.md"):
+            try:
+                c_res = cand.resolve()
+                if c_res.is_relative_to(vault_root) and c_res.is_file():
+                    c_res.unlink(missing_ok=True)
+                    file_deleted = True
+            except Exception:
+                pass
+
+    return db_deleted or file_deleted
 
 
 def sync_vault_to_db(force: bool = False) -> dict:

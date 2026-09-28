@@ -253,6 +253,22 @@ def test_path_traversal_in_move_note_blocked(client):
     assert "inválida" in r.json()["detail"].lower() or "traversal" in r.json()["detail"].lower()
 
 
+def test_path_traversal_in_delete_folder_blocked(client):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    payloads = [
+        "../escaped_folder",
+        "../../etc",
+        "/",
+        "",
+        "valid/../../../root",
+    ]
+    for p in payloads:
+        r = client.delete(f"/notes/folders?path={p}", headers=headers)
+        assert r.status_code == 400, f"Delete folder traversal '{p}' no devolvió 400"
+        assert "inválida" in r.json()["detail"].lower() or "traversal" in r.json()["detail"].lower()
+
+
+
 # --- 6. Seguridad en Archivos Adjuntos ---
 
 def test_dangerous_attachment_extensions_rejected(client):

@@ -77,6 +77,7 @@ const Editor = (() => {
               <button class="mode-btn ${viewMode === 'preview' ? 'active' : ''}" data-mode="preview" title="${modePreview}">👁️</button>
             </div>
             <button id="btn-local-graph" class="btn-tool" title="${localGraphTitle}">${localGraphTxt}</button>
+            <button id="btn-delete-active-note" class="btn-tool danger" title="${window.I18n ? window.I18n.t('menu_delete') : 'Eliminar'}">🗑️</button>
           </div>
         </div>
 
@@ -150,6 +151,23 @@ const Editor = (() => {
       } catch (err) {
         alert(`Error al renombrar: ${err.message}`);
         titleInput.value = currentNote.title;
+      }
+    });
+
+    // Eliminar nota actual desde el editor
+    document.getElementById("btn-delete-active-note")?.addEventListener("click", async () => {
+      if (!currentNote) return;
+      const t = (k, p) => window.I18n ? window.I18n.t(k, p) : k;
+      const confirmMsg = t('confirm_delete_note', { title: currentNote.title || currentNote.id });
+      if (!confirm(confirmMsg)) return;
+      try {
+        await API.deleteNote(currentNote.id);
+        currentNote = null;
+        renderEditor();
+        Explorer.loadTree();
+        if (window.appLoadGraph) window.appLoadGraph();
+      } catch (err) {
+        alert(`Error al eliminar: ${err.message}`);
       }
     });
 
