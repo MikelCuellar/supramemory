@@ -77,14 +77,22 @@ async def contribute(payload: AgentNoteCreate, auth: dict = Depends(require_writ
         f"{datetime.now(timezone.utc).isoformat()}</sub>\n"
     )
 
-    note = notes_svc.create_note(
-        title=payload.title,
-        content=payload.content + provenance,
-        source=f"agent:{auth['name']}",
-        tags=all_tags,
-        links=all_links,
-        write_to_vault=True,
-    )
+    try:
+        note = notes_svc.create_note(
+            title=payload.title,
+            content=payload.content + provenance,
+            source=f"agent:{auth['name']}",
+            tags=all_tags,
+            links=all_links,
+            write_to_vault=True,
+        )
+    except notes_svc.NoteExistsError:
+        # Nunca pisar conocimiento existente (p. ej. una nota humana con el mismo título)
+        raise HTTPException(
+            status_code=409,
+            detail=f"A note titled '{payload.title}' already exists "
+                   f"(id '{notes_svc.slugify(payload.title)}'). Use PATCH /notes/{{id}} to update it.",
+        )
 
     # Devolver qué related se resolvió efectivamente
     related_resolved = [

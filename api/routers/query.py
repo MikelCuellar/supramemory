@@ -1,5 +1,5 @@
 """Búsqueda full-text."""
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.core.models import ContextResponse
 from api.core.security import require_read
@@ -33,5 +33,10 @@ async def execute_query(
     """Ejecuta una consulta SQL de solo lectura segura (estilo Dataview)."""
     from api.services.query_engine import execute_safe_query
     q = payload.get("query", "")
-    limit = payload.get("limit", 50)
+    if not isinstance(q, str):
+        raise HTTPException(status_code=400, detail="'query' must be a string")
+    try:
+        limit = max(1, int(payload.get("limit", 50)))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="'limit' must be an integer")
     return execute_safe_query(q, limit=limit)

@@ -58,6 +58,16 @@
   stroke-width: 3;
 }
 
+/* Grafos grandes se dibujan en <canvas> (graph.js: setupCanvasRender). El canvas
+   va debajo; el <svg> vacío queda encima para capturar zoom, pan y clicks. */
+#graph-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+#graph-svg { position: relative; }
+
 /* Partículas de impulso sináptico */
 .synapse-particle {
   pointer-events: none;

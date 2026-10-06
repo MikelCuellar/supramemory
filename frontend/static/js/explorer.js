@@ -23,7 +23,7 @@ const Explorer = (() => {
       renderTree(treeData);
     } catch (e) {
       console.error("Error loading vault tree:", e);
-      treeContainer.innerHTML = `<div class="tree-error" style="padding:10px;font-size:12px;color:var(--fg-muted);">Error cargando archivos: ${e.message}<br><small>Si persiste, presiona Ctrl+F5 para limpiar caché.</small></div>`;
+      treeContainer.innerHTML = `<div class="tree-error" style="padding:10px;font-size:12px;color:var(--fg-muted);">Error cargando archivos: ${escapeHtml(e.message)}<br><small>Si persiste, presiona Ctrl+F5 para limpiar caché.</small></div>`;
     }
   }
 

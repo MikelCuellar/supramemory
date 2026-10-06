@@ -8,11 +8,30 @@ from api.core.security import require_read
 router = APIRouter(prefix="/graph", tags=["graph"], dependencies=[Depends(require_read)])
 
 
+# Un tag compartido por muchas notas (#daily, #proyecto) no indica relación real
+# y, como cada tag genera un clique, sus aristas crecen en O(n²): 500 notas con
+# #daily producían ~70k aristas y congelaban el navegador. Esos tags se omiten.
+SEMANTIC_MAX_GROUP = 15
+
+
+def _tags_by_note(conn, note_ids: set[str]) -> dict[str, list[str]]:
+    tags: dict[str, list[str]] = {nid: [] for nid in note_ids}
+    for r in conn.execute("SELECT note_id, tag FROM tags ORDER BY tag"):
+        if r["note_id"] in tags:
+            tags[r["note_id"]].append(r["tag"])
+    return tags
+
+
 @router.get("", response_model=GraphResponse)
 async def get_graph(
     source: str | None = Query(default=None, description="Filtrar nodos por origen"),
     tag: str | None = Query(default=None, description="Filtrar nodos por tag"),
     min_degree: int = Query(default=0, ge=0, description="Mínimo de conexiones"),
+    semantic: bool = Query(default=True, description="Incluir aristas implícitas por tags compartidos"),
+    semantic_max_group: int = Query(
+        default=SEMANTIC_MAX_GROUP, ge=2, le=100,
+        description="Tags presentes en más notas que esto no generan aristas semánticas",
+    ),
 ):
     """Devuelve nodos y aristas para el graph view.
 
@@ -20,89 +39,68 @@ async def get_graph(
     escalar el tamaño en el frontend.
     """
     with get_db() as conn:
-        # Construir query de nodos con filtros
+        # Grado por wikilinks en una sola pasada (antes: 2 subqueries por nota)
         node_query = """
-            SELECT n.id, n.title, n.source,
-                   (SELECT COUNT(*) FROM links WHERE source_id = n.id OR target_id = n.id) AS degree
-            FROM notes n
-            WHERE 1=1
+            WITH deg AS (
+                SELECT id, COUNT(*) AS d FROM (
+                    SELECT source_id AS id FROM links
+                    UNION ALL
+                    SELECT target_id AS id FROM links WHERE target_id IS NOT NULL
+                ) GROUP BY id
+            )
+            SELECT n.id, n.title, n.source, COALESCE(deg.d, 0) AS degree
+            FROM notes n LEFT JOIN deg ON deg.id = n.id
+            WHERE COALESCE(deg.d, 0) >= ?
         """
-        params: list = []
+        params: list = [min_degree]
         if source:
             node_query += " AND n.source = ?"
             params.append(source)
         if tag:
             node_query += " AND n.id IN (SELECT note_id FROM tags WHERE tag = ?)"
             params.append(tag)
-        node_query += " AND (SELECT COUNT(*) FROM links WHERE source_id = n.id OR target_id = n.id) >= ?"
-        params.append(min_degree)
 
         node_rows = conn.execute(node_query, params).fetchall()
         node_ids = {row["id"] for row in node_rows}
+        node_tags_map = _tags_by_note(conn, node_ids)
 
-        # Tags por nodo
-        nodes: list[GraphNode] = []
-        node_tags_map: dict[str, list[str]] = {}
-        for row in node_rows:
-            tags = [r["tag"] for r in conn.execute(
-                "SELECT tag FROM tags WHERE note_id = ?", (row["id"],)
-            ).fetchall()]
-            node_tags_map[row["id"]] = tags
-            nodes.append(GraphNode(
-                id=row["id"],
-                label=row["title"],
-                source=row["source"],
-                tags=tags,
-                degree=row["degree"],
-            ))
+        nodes = [
+            GraphNode(id=row["id"], label=row["title"], source=row["source"],
+                      tags=node_tags_map[row["id"]], degree=row["degree"])
+            for row in node_rows
+        ]
 
         # 1. Aristas explícitas de la tabla links
-        edge_rows = conn.execute(
-            """SELECT source_id, target_id, target_title, weight, kind
-               FROM links
-               WHERE source_id IN (SELECT id FROM notes)"""
-        ).fetchall()
-
         edges: list[GraphEdge] = []
         existing_pairs: set[tuple[str, str]] = set()
-
-        for row in edge_rows:
-            sid = row["source_id"]
-            tid = row["target_id"]
-            if sid not in node_ids:
+        for row in conn.execute(
+            "SELECT source_id, target_id, target_title, weight, kind FROM links WHERE target_id IS NOT NULL"
+        ):
+            sid, tid = row["source_id"], row["target_id"]
+            if sid not in node_ids or tid not in node_ids:
                 continue
-            if tid and tid in node_ids:
-                pair = tuple(sorted([sid, tid]))
-                if pair not in existing_pairs:
-                    existing_pairs.add(pair)
-                    edges.append(GraphEdge(
-                        source=sid,
-                        target=tid,
-                        target_title=row["target_title"],
-                        weight=row["weight"],
-                        kind=row["kind"],
-                    ))
+            pair = (sid, tid) if sid < tid else (tid, sid)
+            if pair not in existing_pairs:
+                existing_pairs.add(pair)
+                edges.append(GraphEdge(source=sid, target=tid, target_title=row["target_title"],
+                                       weight=row["weight"], kind=row["kind"]))
 
-        # 2. Aristas semánticas implícitas entre nodos que comparten 1 o más tags
-        node_list = list(node_ids)
-        for i in range(len(node_list)):
-            for j in range(i + 1, len(node_list)):
-                id1, id2 = node_list[i], node_list[j]
-                pair = tuple(sorted([id1, id2]))
-                if pair in existing_pairs:
+        # 2. Aristas semánticas: notas que comparten un tag poco común
+        if semantic:
+            members_by_tag: dict[str, list[str]] = {}
+            for nid, tags in node_tags_map.items():
+                for t in tags:
+                    members_by_tag.setdefault(t, []).append(nid)
+            for members in members_by_tag.values():
+                if len(members) > semantic_max_group:
                     continue
-                t1 = set(node_tags_map.get(id1, []))
-                t2 = set(node_tags_map.get(id2, []))
-                common = t1.intersection(t2)
-                if common:
-                    existing_pairs.add(pair)
-                    edges.append(GraphEdge(
-                        source=id1,
-                        target=id2,
-                        target_title="",
-                        weight=0.7,
-                        kind="semantic",
-                    ))
+                members.sort()
+                for i, id1 in enumerate(members):
+                    for id2 in members[i + 1:]:
+                        if (id1, id2) not in existing_pairs:
+                            existing_pairs.add((id1, id2))
+                            edges.append(GraphEdge(source=id1, target=id2, target_title="",
+                                                   weight=0.7, kind="semantic"))
 
         # Recalcular degree en respuesta
         degree_count: dict[str, int] = {}
@@ -179,18 +177,12 @@ async def get_local_graph(
             list(visited_nodes),
         ).fetchall()
 
-        nodes: list[GraphNode] = []
-        for nr in node_rows:
-            tags = [r["tag"] for r in conn.execute(
-                "SELECT tag FROM tags WHERE note_id = ?", (nr["id"],)
-            ).fetchall()]
-            nodes.append(GraphNode(
-                id=nr["id"],
-                label=nr["title"],
-                source=nr["source"],
-                tags=tags,
-                degree=0,
-            ))
+        tags_map = _tags_by_note(conn, visited_nodes)
+        nodes = [
+            GraphNode(id=nr["id"], label=nr["title"], source=nr["source"],
+                      tags=tags_map[nr["id"]], degree=0)
+            for nr in node_rows
+        ]
 
         # Calcular degree
         deg_map: dict[str, int] = {}

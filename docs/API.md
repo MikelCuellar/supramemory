@@ -63,6 +63,7 @@ Devuelve contexto relevante con fragmentos y metadatos optimizados para inyecci�
 ### `POST /agents/feed`
 Permite a un agente aportar un nuevo aprendizaje estructurado, indicando autoría, certeza y notas relacionadas.
 - **Scope requerido:** `write`
+- **409 Conflict:** si ya existe una nota con ese título (mismo id). Nunca se sobrescribe conocimiento existente; para actualizarlo usa `PATCH /notes/{id}`. Lo mismo aplica a `POST /notes`.
 
 **Request Body:**
 ```json
@@ -219,10 +220,12 @@ Sube un archivo adjunto (imagen, audio, pdf) a `/vault/attachments/`.
 {
   "filename": "diagrama_1.png",
   "path": "attachments/diagrama_1.png",
-  "url": "/attachments/diagrama_1.png",
+  "url": "/attachments/diagrama_1.png?exp=1791290837&sig=…",
   "embed_markdown": "![[diagrama_1.png]]"
 }
 ```
+
+`GET /attachments/{filename}` exige una URL firmada (`exp` + `sig`, HMAC con la master key, válida 12 h). El render de notas (`/notes/{id}/render`) firma automáticamente los `![[adjunto]]`; sin firma responde `422`/`403`.
 
 ---
 
@@ -230,7 +233,8 @@ Sube un archivo adjunto (imagen, audio, pdf) a `/vault/attachments/`.
 
 ### `GET /graph`
 Devuelve la totalidad de nodos y aristas para la visualización global en D3.js.
-- **Query Params:** `source`, `tag`, `min_degree`.
+- **Query Params:** `source`, `tag`, `min_degree`, `semantic` (default `true`), `semantic_max_group` (default `15`).
+- **Aristas semánticas:** une notas que comparten un tag, pero solo para tags presentes en ≤ `semantic_max_group` notas. Los tags genéricos (`#daily`, `#proyecto`) se omiten: cada tag genera un clique, y sin ese tope 500 notas producían ~70 000 aristas.
 - **Scope:** `read`
 
 ### `GET /graph/local/{note_id}`

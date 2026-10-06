@@ -12,7 +12,15 @@ from api.services.markdown import (
     parse_note_file,
     slugify,
 )
-from api.services.notes import get_note, _index_fts, _sync_links, _sync_tags, _resolve_all_links
+from api.services.notes import (
+    InvalidNoteIdError,
+    NoteExistsError,
+    get_note,
+    _index_fts,
+    _resolve_all_links,
+    _sync_links,
+    _sync_tags,
+)
 
 
 def rename_note_and_refactor_links(
@@ -33,12 +41,23 @@ def rename_note_and_refactor_links(
     new_id = slugify(new_title)
     now = datetime.now(timezone.utc).isoformat()
 
+    if new_id != old_id:
+        clash = get_note(new_id)
+        if clash and clash["source"] != "stub":
+            raise NoteExistsError(f"Note '{new_id}' already exists")
+        if clash:
+            # El stub queda absorbido por la nota renombrada
+            with get_db() as conn:
+                conn.execute("DELETE FROM notes WHERE id = ?", (new_id,))
+
     # 1. Renombrar en disco si existe
     old_file_path = Path(old_note["path"]) if old_note.get("path") else (settings.vault_path / f"{old_id}.md")
     new_file_path = None
     if settings.vault_path.exists():
         if new_path:
-            target_p = settings.vault_path / new_path
+            target_p = (settings.vault_path / new_path).resolve()
+            if not target_p.is_relative_to(settings.vault_path.resolve()) or target_p.suffix != ".md":
+                raise InvalidNoteIdError(f"Invalid new_path '{new_path}': must be a .md file inside the vault")
             target_p.parent.mkdir(parents=True, exist_ok=True)
             new_file_path = target_p
         else:

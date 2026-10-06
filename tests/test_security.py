@@ -303,7 +303,82 @@ def test_safe_attachment_allowed(client):
     assert r.status_code == 200
     data = r.json()
     assert data["filename"] == "diagram.png"
-    assert data["url"] == "/attachments/diagram.png"
+    assert data["url"].startswith("/attachments/diagram.png?exp=")
+
+    # La URL firmada sirve el archivo; sin firma o adulterada, no
+    assert client.get(data["url"]).status_code == 200
+    assert client.get("/attachments/diagram.png").status_code == 422
+    tampered = data["url"].replace("diagram.png", "otro.png")
+    assert client.get(tampered).status_code == 403
+
+
+def test_svg_attachment_served_with_sandbox_csp(client):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+    r = client.post("/notes/attachments", headers=headers,
+                    files={"file": ("x.svg", svg, "image/svg+xml")})
+    r2 = client.get(r.json()["url"])
+    assert r2.status_code == 200
+    assert "sandbox" in r2.headers["Content-Security-Policy"]
+
+
+# --- XSS persistente en el render de notas ---
+
+def test_rendered_note_html_is_sanitized(client):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    payload = (
+        "Hola <img src=x onerror=alert(1)> <script>alert(2)</script>\n\n"
+        "[link](javascript:alert(3)) y [[Otra Nota]]\n\n"
+        "> [!WARNING] Ojo\n> <b onclick=alert(4)>cuerpo</b>\n\n"
+        "![[foto.png|300]]\n\n- [x] hecho\n"
+    )
+    client.post("/notes", headers=headers, json={"title": "XSS", "content": payload})
+    html_out = client.get("/notes/xss/render", headers=headers).json()["html"]
+    for bad in ("onerror", "<script", "javascript:", "onclick"):
+        assert bad not in html_out
+    # Lo legítimo sobrevive al saneo
+    assert 'class="wikilink"' in html_out and 'data-target="otra-nota"' in html_out
+    assert 'class="callout callout-warning"' in html_out
+    assert "max-width: 300px" in html_out and "/attachments/foto.png?exp=" in html_out
+    assert 'type="checkbox"' in html_out
+
+
+# --- Path traversal vía id de nota ---
+
+def test_note_id_path_traversal_rejected(client, tmp_path):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    for bad_id in ("../escape", "..\\escape", "sub/dir", ".hidden", "C:evil"):
+        r = client.post("/notes", headers=headers,
+                        json={"title": "x", "content": "y", "id": bad_id})
+        assert r.status_code == 400, bad_id
+
+
+def test_rename_new_path_traversal_rejected(client):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    client.post("/notes", headers=headers, json={"title": "Base", "content": "c"})
+    r = client.post("/notes/rename?note_id=base", headers=headers,
+                    json={"new_title": "Base 2", "new_path": "../../fuera.md"})
+    assert r.status_code == 400
+
+
+# --- Tokens y query engine ---
+
+def test_token_with_invalid_expiry_rejected(client):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    r = client.post("/tokens", headers=headers,
+                    json={"name": "bad", "scopes": ["read"], "expires_at": "mañana"})
+    assert r.status_code == 400
+
+
+def test_query_engine_blocks_pragma_functions(client):
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    for q in ("SELECT * FROM pragma_database_list",
+              "SELECT * FROM pragma_table_info('api_' || 'tokens')",
+              "SELECT name FROM sqlite_temp_schema"):
+        res = client.post("/query/execute", headers=headers, json={"query": q}).json()
+        assert "error" in res and not res["rows"], q
+    r = client.post("/query/execute", headers=headers, json={"query": "SELECT 1", "limit": "x"})
+    assert r.status_code == 400
 
 
 # --- 7. Verificación de Security Headers HTTP ---
@@ -315,3 +390,15 @@ def test_security_headers_injected_in_responses(client):
     assert r.headers.get("X-Frame-Options") == "DENY"
     assert r.headers.get("X-XSS-Protection") == "1; mode=block"
     assert r.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+
+
+def test_corrupt_token_expiry_fails_closed(client):
+    """Un expires_at ilegible en la DB debe invalidar el token, no hacerlo eterno."""
+    headers = {"Authorization": "Bearer super-secret-master-key"}
+    token = client.post("/tokens", headers=headers,
+                        json={"name": "t", "scopes": ["read"]}).json()["token"]
+    import api.core.db as db_mod
+    with db_mod.get_db() as conn:
+        conn.execute("UPDATE api_tokens SET expires_at = 'basura' WHERE name = 't'")
+    r = client.get("/notes", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 403

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from api.core.config import settings
 from api.core.db import get_db
+from api.core.security import sign_attachment_url
 from api.services.markdown import note_to_markdown, parse_note_file, slugify
 from api.services.notes import create_note, get_note, update_note
 
@@ -70,6 +71,16 @@ ALLOWED_ATTACHMENT_EXTENSIONS = {
     ".pdf", ".mp3", ".wav", ".m4a", ".ogg",
     ".txt", ".csv", ".json", ".md"
 }
+
+
+def resolve_attachment(filename: str) -> Path | None:
+    """Devuelve la ruta de un adjunto existente dentro de /vault/attachments, o None."""
+    attach_dir = settings.vault_path / "attachments"
+    try:
+        target = _ensure_safe_path(attach_dir / filename, attach_dir)
+    except ValueError:
+        return None
+    return target if target.is_file() else None
 
 
 def _ensure_safe_path(target_path: Path, base_dir: Path) -> Path:
@@ -250,6 +261,6 @@ def save_attachment(filename: str, file_bytes: bytes) -> dict:
     return {
         "filename": target_file.name,
         "path": f"attachments/{target_file.name}",
-        "url": f"/attachments/{target_file.name}",
+        "url": sign_attachment_url(target_file.name),
         "embed_markdown": f"![[{target_file.name}]]",
     }

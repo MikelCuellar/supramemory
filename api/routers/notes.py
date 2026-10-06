@@ -49,6 +49,10 @@ async def rename_note(payload: NoteRenameRequest, note_id: str = Query(...)):
             new_path=payload.new_path,
         )
         return res
+    except notes_svc.NoteExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except notes_svc.InvalidNoteIdError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -103,14 +107,19 @@ async def upload_attachment(file: UploadFile = File(...)):
 
 @router.post("", response_model=Note, status_code=201, dependencies=[Depends(require_write)])
 async def create_note(payload: NoteCreate):
-    return notes_svc.create_note(
-        title=payload.title,
-        content=payload.content,
-        source=payload.source,
-        tags=payload.tags,
-        links=payload.links,
-        note_id=payload.id,
-    )
+    try:
+        return notes_svc.create_note(
+            title=payload.title,
+            content=payload.content,
+            source=payload.source,
+            tags=payload.tags,
+            links=payload.links,
+            note_id=payload.id,
+        )
+    except notes_svc.NoteExistsError as e:
+        raise HTTPException(status_code=409, detail=f"{e}. Use PATCH /notes/{{id}} to update it.")
+    except notes_svc.InvalidNoteIdError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{note_id}", response_model=Note, dependencies=[Depends(require_read)])

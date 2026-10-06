@@ -11,9 +11,11 @@ FORBIDDEN_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
-# Tablas restringidas (credenciales y metadatos internos de SQLite)
+# Tablas restringidas (credenciales y metadatos internos de SQLite). También las
+# funciones tabla `pragma_*` y `load_extension`, que no caen en FORBIDDEN_KEYWORDS
+# porque `\bPRAGMA\b` no calza con `pragma_table_info` (el "_" es carácter de palabra).
 FORBIDDEN_TABLES = re.compile(
-    r"\b(api_tokens|sqlite_master|sqlite_schema|sqlite_temp_master|sqlite_sequence)\b",
+    r"\b(api_tokens|sqlite_\w+|pragma_\w+|load_extension)\b",
     re.IGNORECASE,
 )
 

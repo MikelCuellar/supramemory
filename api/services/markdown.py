@@ -14,6 +14,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import frontmatter
+import nh3
+
+from api.core import security
 
 WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
 EMBED_ATTACHMENT_RE = re.compile(r"!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
@@ -169,16 +172,17 @@ def _process_wikilinks_and_embeds(text: str) -> str:
         width = m.group(2).strip() if m.group(2) else ""
         ext = filename.split(".")[-1].lower() if "." in filename else ""
         style = f'style="max-width: {width}px;"' if width and width.isdigit() else ""
+        url = html.escape(security.sign_attachment_url(filename))
         if ext in {"png", "jpg", "jpeg", "gif", "svg", "webp", "avif"}:
-            return f'<img src="/attachments/{html.escape(filename)}" alt="{html.escape(filename)}" class="embedded-image" {style} loading="lazy" />'
+            return f'<img src="{url}" alt="{html.escape(filename)}" class="embedded-image" {style} loading="lazy" />'
         elif ext in {"mp3", "wav", "ogg", "m4a"}:
-            return f'<audio controls src="/attachments/{html.escape(filename)}" class="embedded-audio"></audio>'
+            return f'<audio controls src="{url}" class="embedded-audio"></audio>'
         elif ext in {"mp4", "webm", "mov"}:
-            return f'<video controls src="/attachments/{html.escape(filename)}" class="embedded-video" {style}></video>'
+            return f'<video controls src="{url}" class="embedded-video" {style}></video>'
         elif ext == "pdf":
-            return f'<iframe src="/attachments/{html.escape(filename)}" class="embedded-pdf" width="100%" height="500px"></iframe>'
+            return f'<iframe src="{url}" class="embedded-pdf" width="100%" height="500px"></iframe>'
         else:
-            return f'<a href="/attachments/{html.escape(filename)}" target="_blank" class="attachment-link">📎 {html.escape(filename)}</a>'
+            return f'<a href="{url}" target="_blank" class="attachment-link">📎 {html.escape(filename)}</a>'
 
     text = EMBED_ATTACHMENT_RE.sub(replace_embed, text)
 
@@ -266,4 +270,49 @@ def render_markdown(content: str) -> str:
     )
 
     rendered_html = _process_wikilinks_and_embeds(rendered_html)
-    return rendered_html
+    return sanitize_html(rendered_html)
+
+
+# Lista blanca del HTML que produce el render. Todo lo demás (scripts, handlers
+# on*, javascript: URLs, HTML crudo escrito en la nota) se elimina.
+_ALLOWED_TAGS = {
+    "a", "abbr", "audio", "b", "blockquote", "br", "code", "del", "div", "em",
+    "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "iframe", "img", "input",
+    "kbd", "li", "mark", "ol", "p", "pre", "s", "small", "span", "strong",
+    "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "u", "ul", "video",
+}
+_ALLOWED_ATTRIBUTES = {
+    "*": {"class", "id", "title"},
+    "a": {"href", "target"},
+    "img": {"src", "alt", "loading", "style", "width", "height"},
+    "audio": {"src", "controls"},
+    "video": {"src", "controls", "style"},
+    "iframe": {"src", "width", "height"},
+    "input": {"type", "checked", "disabled"},
+    "td": {"align", "style"},
+    "th": {"align", "style"},
+}
+_SAFE_STYLE_RE = re.compile(r"^\s*(max-width:\s*\d+px|text-align:\s*(left|right|center));?\s*$")
+
+
+def _attribute_filter(tag: str, attr: str, value: str) -> str | None:
+    if attr == "style":
+        return value if _SAFE_STYLE_RE.match(value) else None
+    if tag == "iframe" and attr == "src":
+        # Solo PDFs propios del vault, nunca páginas externas
+        return value if value.startswith("/attachments/") else None
+    if tag == "input" and attr == "type":
+        return value if value == "checkbox" else None
+    return value
+
+
+def sanitize_html(rendered: str) -> str:
+    """Filtra el HTML renderizado contra una lista blanca (previene XSS persistente)."""
+    return nh3.clean(
+        rendered,
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRIBUTES,
+        generic_attribute_prefixes={"data-"},
+        attribute_filter=_attribute_filter,
+        url_schemes={"http", "https", "mailto"},
+    )

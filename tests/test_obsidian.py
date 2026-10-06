@@ -274,3 +274,98 @@ def test_delete_folder_removes_folder_and_purges_notes(client):
     get_note = client.get("/notes/nota-en-carpeta", headers={"Authorization": "Bearer test-key"})
     assert get_note.status_code == 404
 
+
+
+# --- Persistencia Local-First y consistencia de datos ---
+
+H = {"Authorization": "Bearer test-key"}
+
+
+def _vault():
+    import api.core.config
+    return api.core.config.settings.vault_path
+
+
+def test_patch_persists_content_to_markdown_file(client):
+    """El autosave del editor (PATCH) debe llegar al .md, no solo a SQLite."""
+    client.post("/notes", headers=H, json={"title": "Persistente", "content": "v1"})
+    md = _vault() / "persistente.md"
+    md.write_text("---\ntitle: Persistente\nautor: humano\ntags:\n  - fm-tag\n---\n\nv1\n",
+                  encoding="utf-8")
+
+    r = client.patch("/notes/persistente", headers=H, json={"content": "v2 con #inline"})
+    assert r.status_code == 200
+    text = md.read_text(encoding="utf-8")
+    assert "v2 con #inline" in text
+    assert "autor: humano" in text            # frontmatter del usuario intacto
+    assert set(r.json()["tags"]) == {"fm-tag", "inline"}
+
+    # Una re-indexación forzada ya no revierte la edición
+    client.post("/ingest/vault?force=true", headers=H)
+    assert "v2" in client.get("/notes/persistente", headers=H).json()["content"]
+
+
+def test_create_does_not_overwrite_existing_note(client):
+    r1 = client.post("/notes", headers=H, json={"title": "Unica", "content": "original humano"})
+    assert r1.status_code == 201
+    r2 = client.post("/notes", headers=H, json={"title": "Unica", "content": "pisada"})
+    assert r2.status_code == 409
+    r3 = client.post("/agents/feed", headers=H, json={"title": "Unica", "content": "agente"})
+    assert r3.status_code == 409
+    assert client.get("/notes/unica", headers=H).json()["content"] == "original humano"
+
+
+def test_create_replaces_stub(client):
+    """Un [[wikilink]] huérfano crea un stub; crear la nota real lo reemplaza."""
+    client.post("/notes", headers=H, json={"title": "A", "content": "ver [[Concepto Nuevo]]"})
+    client.post("/ingest/vault", headers=H)
+    assert client.get("/notes/concepto-nuevo", headers=H).json()["source"] == "stub"
+    r = client.post("/notes", headers=H, json={"title": "Concepto Nuevo", "content": "real"})
+    assert r.status_code == 201
+    assert r.json()["source"] == "manual"
+
+
+def test_fts_index_has_no_orphans_after_recreate(client):
+    import api.core.db as db_mod
+    client.post("/notes", headers=H, json={"title": "A", "content": "ver [[Fantasma]]"})
+    client.post("/ingest/vault", headers=H)
+    client.post("/notes", headers=H, json={"title": "Fantasma", "content": "palabraunica"})
+    for _ in range(3):
+        client.post("/ingest/vault?force=true", headers=H)
+    with db_mod.get_db() as conn:
+        orphans = conn.execute(
+            "SELECT COUNT(*) FROM notes_fts WHERE rowid NOT IN (SELECT rowid FROM notes)"
+        ).fetchone()[0]
+    assert orphans == 0
+    hits = client.get("/query?q=palabraunica", headers=H).json()
+    assert [h["id"] for h in hits] == ["fantasma"]
+
+
+def test_sync_preserves_agent_source(client):
+    client.post("/agents/feed", headers=H, json={"title": "Aporte", "content": "dato"})
+    client.post("/ingest/vault?force=true", headers=H)
+    assert client.get("/notes/aporte", headers=H).json()["source"] == "agent:master"
+
+
+def test_delete_note_keeps_namesake_in_other_folder(client):
+    client.post("/notes", headers=H, json={"title": "Dup", "content": "raiz"})
+    other = _vault() / "otra" / "dup.md"
+    other.parent.mkdir()
+    other.write_text("---\ntitle: Dup\n---\n\notra carpeta\n", encoding="utf-8")
+    assert client.delete("/notes/dup", headers=H).status_code == 204
+    assert not (_vault() / "dup.md").exists()
+    assert other.exists()
+
+
+def test_graph_semantic_edges_skip_generic_tags(client):
+    """Un tag en muchas notas no debe generar un clique O(n²) de aristas."""
+    for i in range(30):
+        client.post("/notes", headers=H, json={"title": f"Diario {i}", "content": "x #daily"})
+    for i in range(3):
+        client.post("/notes", headers=H, json={"title": f"Raro {i}", "content": "x #nicho"})
+    g = client.get("/graph", headers=H).json()
+    semantic = [e for e in g["edges"] if e["kind"] == "semantic"]
+    assert len(semantic) == 3  # solo el clique de #nicho (3 notas); #daily (30) se omite
+    assert client.get("/graph?semantic=false", headers=H).json()["edges"] == []
+    big = client.get("/graph?semantic_max_group=30", headers=H).json()["edges"]
+    assert len(big) == 3 + 30 * 29 // 2

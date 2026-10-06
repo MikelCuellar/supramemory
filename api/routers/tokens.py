@@ -41,8 +41,10 @@ async def create(payload: TokenCreate):
     for s in payload.scopes:
         if s not in valid_scopes:
             raise HTTPException(status_code=400, detail=f"Invalid scope '{s}'. Use: {list(valid_scopes)}")
-    result = create_token(payload.name, payload.scopes, payload.expires_at)
-    return result
+    try:
+        return create_token(payload.name, payload.scopes, payload.expires_at)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="expires_at must be an ISO 8601 timestamp")
 
 
 @router.get("", response_model=list[TokenInfo])

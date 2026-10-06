@@ -88,6 +88,8 @@ def init_db() -> None:
         if row and "content=''" in (row[0] or ""):
             conn.execute("DROP TABLE notes_fts")
         conn.executescript(SCHEMA)
+        # Limpieza de filas FTS huérfanas que dejaba el antiguo INSERT OR REPLACE
+        conn.execute("DELETE FROM notes_fts WHERE rowid NOT IN (SELECT rowid FROM notes)")
         conn.commit()
 
 

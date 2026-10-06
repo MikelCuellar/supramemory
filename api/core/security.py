@@ -11,10 +11,12 @@ El token plano solo se muestra UNA vez al crear. En DB se guarda un hash SHA-256
 Tokens están separados de `settings.api_key` (que es el "master key" del admin).
 """
 import hashlib
+import hmac
 import secrets
-import sqlite3
+import time
 from datetime import datetime, timezone
 from typing import Literal
+from urllib.parse import quote
 
 from fastapi import Header, HTTPException, status
 
@@ -35,9 +37,20 @@ def _generate_key() -> tuple[str, str]:
     return plain, _hash_key(plain)
 
 
-def create_token(name: str, scopes: list[str] = ["read"],
+def parse_expiry(expires_at: str) -> datetime:
+    """Parsea un ISO timestamp de expiración. Lanza ValueError si es inválido."""
+    exp = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    return exp
+
+
+def create_token(name: str, scopes: list[str] | None = None,
                 expires_at: str | None = None) -> dict:
     """Crea un token. Devuelve el token plain (mostrar al user UNA vez)."""
+    scopes = scopes or ["read"]
+    if expires_at:
+        parse_expiry(expires_at)
     plain, key_hash = _generate_key()
     now = datetime.now(timezone.utc).isoformat()
     scopes_str = ",".join(scopes)
@@ -105,11 +118,11 @@ def _verify_token(plain: str) -> dict | None:
             return None
         if token["expires_at"]:
             try:
-                exp = datetime.fromisoformat(token["expires_at"].replace("Z", "+00:00"))
-                if datetime.now(timezone.utc) > exp:
+                if datetime.now(timezone.utc) > parse_expiry(token["expires_at"]):
                     return None
-            except Exception:
-                pass
+            except ValueError:
+                # Fecha corrupta: fallar cerrado en vez de dar un token eterno
+                return None
         conn.execute(
             "UPDATE api_tokens SET last_used_at = ? WHERE key_hash = ?",
             (datetime.now(timezone.utc).isoformat(), key_hash),
@@ -156,6 +169,30 @@ async def require_api_key(
             detail=f"Token lacks required scope: {required_scope}",
         )
     return {"name": token["name"], "scopes": token_scopes}
+
+
+# --- URLs firmadas para adjuntos ---
+# Los <img>/<audio>/<iframe> del navegador no pueden mandar el header Bearer,
+# así que el render entrega URLs con una firma HMAC de vida limitada.
+
+ATTACHMENT_URL_TTL = 12 * 3600
+
+
+def _attachment_signature(filename: str, exp: int) -> str:
+    msg = f"{filename}:{exp}".encode()
+    return hmac.new(settings.api_key.encode(), msg, hashlib.sha256).hexdigest()
+
+
+def sign_attachment_url(filename: str, ttl: int = ATTACHMENT_URL_TTL) -> str:
+    exp = int(time.time()) + ttl
+    sig = _attachment_signature(filename, exp)
+    return f"/attachments/{quote(filename)}?exp={exp}&sig={sig}"
+
+
+def verify_attachment_signature(filename: str, exp: int, sig: str) -> bool:
+    if exp < time.time():
+        return False
+    return hmac.compare_digest(sig, _attachment_signature(filename, exp))
 
 
 # Helpers para FastAPI dependencies con scope específico
